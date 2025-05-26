@@ -9,6 +9,7 @@ white = (255, 255, 255)
 red = (255, 0, 0)
 yellow = (255, 255, 0)
 green = (0, 255, 0)
+cyan = (0, 255, 255)
 blue = (0, 0, 255)
 globalOrigin = [0., 0., 0., 1.]
 WIDTH, HEIGHT = 600, 600
@@ -99,10 +100,10 @@ class Geometry:
         np.array([1, 0, 1, 1])
         ], [
             [0, 1, 2, 3],
-            [4, 5, 6, 7],
-            [0, 1, 5, 4],
-            [2, 3, 7, 6],
-            [1, 2, 6, 5],
+            [4, 7, 6, 5],
+            [0, 4, 5, 1],
+            [2, 6, 7, 3],
+            [1, 5, 6, 2],
             [0, 3, 7, 4]
         ]]
 
@@ -237,17 +238,24 @@ class Object3D:
         clippingSpaceVertices = [vertex @ projectionMatrix if vertex[2] > 0 else None for vertex in cameraSpaceVertices]
         normalizedVertices = [[coordinate / vertex[3] for coordinate in vertex] if vertex is not None else None for vertex in clippingSpaceVertices]
         screenSpaceVertices = [vertex @ screenTransformation if vertex is not None else None for vertex in normalizedVertices]
+        
         for face in self.faces:
-            polygon = [screenSpaceVertices[vertex] for vertex in face if screenSpaceVertices[vertex] is not None]
-            if len(polygon) > 2:
-                pygame.draw.polygon(screen, self.color, [vertex[:2] for vertex in polygon])
-        for face in self.faces:
-            polygon = [screenSpaceVertices[vertex] for vertex in face if screenSpaceVertices[vertex] is not None]
-            if len(polygon) > 1:
-                pygame.draw.polygon(screen, blue, [vertex[:2] for vertex in polygon], 1)
-        for vertex in screenSpaceVertices:
-            if vertex is not None and 0 <= vertex[0] <= WIDTH and 0 <= vertex[1] <= HEIGHT:
-                pygame.draw.circle(screen, blue, vertex[:2], 2)
+            polygon = [cameraSpaceVertices[vertex] for vertex in face if cameraSpaceVertices[vertex] is not None]
+            vertexCount = len(polygon)
+            if vertexCount > 2:
+                a = polygon[0][:3] - polygon[1][:3]
+                b = polygon[2][:3] - polygon[1][:3]
+                normal = np.cross(a, b)
+                center = np.array([0., 0., 0.])
+                for vertex in polygon:
+                    center += vertex[:3]
+                if np.dot(normal, center) > 0:
+                    polygon = [screenSpaceVertices[vertex] for vertex in face if screenSpaceVertices[vertex] is not None]
+                    pygame.draw.polygon(screen, self.color, [vertex[:2] for vertex in polygon])
+                    pygame.draw.polygon(screen, blue, [vertex[:2] for vertex in polygon], 1)
+                    for vertex in polygon:
+                        if vertex is not None and 0 <= vertex[0] <= WIDTH and 0 <= vertex[1] <= HEIGHT:
+                            pygame.draw.circle(screen, blue, vertex[:2], 2)
 
 class Engine3D:
     def __init__(self, players, objects):
@@ -258,7 +266,7 @@ class Engine3D:
         self.screenTransformation = self.getScreenTransformation()
         
     def render(self):
-        self.screen.fill(black)
+        self.screen.fill(cyan)
         
         self.players[0].update()
         
@@ -291,7 +299,7 @@ def main():
     
     pygame.init()
     players = [Player()]
-    objects = [Object3D(Geometry.cube), Object3D(Geometry.globalBasisVectors, red)]
+    objects = [Object3D(Geometry.cube)]
     engine = Engine3D(players, objects)
     
     objects[0].vertices = [vertex + np.array([0.5, 0, 0.5, 0]) for vertex in objects[0].vertices]

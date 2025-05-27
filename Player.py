@@ -51,6 +51,7 @@ class Player:
         if screenSpaceVertices[0] is not None and cameraSpaceVertices[0][2] < 10 and 0 <= screenSpaceVertices[0][0] <= Global.WIDTH and 0 <= screenSpaceVertices[0][1] <= Global.HEIGHT:
             screen.blit(self.font.render(self.name, True, Color.black, Color.white), [screenSpaceVertices[0][0] - 5 * len(self.name), screenSpaceVertices[0][1] - 10])
 
-    def getTransformedPosition(self, camera):
+    def getArrangementValue(self, camera):
         cameraTransformation = camera.cameraTransformation
-        return self.globalPosition @ cameraTransformation
+        cameraSpacePosition = self.globalPosition @ cameraTransformation
+        return sqrt(sqrt(cameraSpacePosition[0]**2 + cameraSpacePosition[1]**2)**2 + cameraSpacePosition[2]**2)

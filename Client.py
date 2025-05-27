@@ -21,7 +21,7 @@ def main():
     engine = Engine3D(players, entities)
     
     client.sendall(pickle.dumps([name, np.append(players[0].globalPosition[:3], 1), players[0].camera.pitch, players[0].camera.yaw]))
-    client.settimeout(0.025)
+    client.settimeout(0.05)
     
     done = False
     while not done:

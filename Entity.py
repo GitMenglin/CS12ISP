@@ -42,7 +42,7 @@ class Block:
     def shift(self, sX, sY, sZ):
         self.vertices = np.array([vertex + np.array([sX, sY, sZ, 0]) for vertex in self.vertices])
 
-    def getTransformedCenter(self, camera):
+    def getArrangementValue(self, camera):
         cameraTransformation = camera.cameraTransformation
         cameraSpaceVertices = self.vertices @ cameraTransformation
         center = np.array([0., 0., 0.])
@@ -50,4 +50,5 @@ class Block:
         for vertex in cameraSpaceVertices:
             center += vertex[:3]
             vertexCount += 1
-        return center / vertexCount
+        center /= vertexCount
+        return sqrt(sqrt(center[0]**2 + center[1]**2)**2 + center[2]**2)

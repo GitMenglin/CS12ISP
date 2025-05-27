@@ -45,8 +45,12 @@ class Player:
                 polygon = [screenSpaceVertices[vertex] for vertex in face if screenSpaceVertices[vertex] is not None]
                 distance = sqrt(sqrt(center[0]**2 + center[1]**2)**2 + center[2]**2)
                 if len(polygon) > 2:
-                    adjustment = int(255 * (-(1 / 2)**(distance / 10) + 1))
-                    pygame.draw.polygon(screen, (255 - adjustment, 255, adjustment), [vertex[:2] for vertex in polygon])
-                    pygame.draw.polygon(screen, (0, adjustment, 255), [vertex[:2] for vertex in polygon], 1)
-        if screenSpaceVertices[0] is not None and 0 <= screenSpaceVertices[0][0] <= Global.WIDTH and 0 <= screenSpaceVertices[0][1] <= Global.HEIGHT:
+                    adjustment = 255 * (1 / 2)**(distance / 100)
+                    pygame.draw.polygon(screen, (adjustment, 255, 255 - adjustment), [vertex[:2] for vertex in polygon])
+                    pygame.draw.polygon(screen, (0, 255 - adjustment, 255), [vertex[:2] for vertex in polygon], 1)
+        if screenSpaceVertices[0] is not None and cameraSpaceVertices[0][2] < 10 and 0 <= screenSpaceVertices[0][0] <= Global.WIDTH and 0 <= screenSpaceVertices[0][1] <= Global.HEIGHT:
             screen.blit(self.font.render(self.name, True, Color.black, Color.white), [screenSpaceVertices[0][0] - 5 * len(self.name), screenSpaceVertices[0][1] - 10])
+
+    def getTransformedPosition(self, camera):
+        cameraTransformation = camera.cameraTransformation
+        return self.globalPosition @ cameraTransformation

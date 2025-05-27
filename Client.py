@@ -17,8 +17,8 @@ def main():
     
     pygame.init()
     players = [Player([1., 2.5, 1., 1.], 0, -pi / 6)]
-    objects = [Block(Geometry.cube, [i, 0, j]) for j in range(8) for i in range(8)]
-    engine = Engine3D(players, objects)
+    entities = [Block(Geometry.cube, [i, 0, j]) for j in range(8) for i in range(8)]
+    engine = Engine3D(players, entities)
     
     client.sendall(pickle.dumps([name, np.append(players[0].globalPosition[:3], 1), players[0].camera.pitch, players[0].camera.yaw]))
     client.settimeout(0.025)

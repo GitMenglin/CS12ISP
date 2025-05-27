@@ -15,8 +15,8 @@ class Camera:
         self.pitch = pitch
         self.yaw = yaw
         self.cameraTransformation = self.getCameraTranslation() @ self.getCameraRotation()
-        self.translationalSpeed = 0.1
-        self.angularSpeed = 0.01
+        self.translationalSpeed = 0.08
+        self.angularSpeed = 0.02
         
         self.horizontalFieldOfView = pi / 2
         self.verticalFieldOfView = self.horizontalFieldOfView * (Global.HEIGHT / Global.WIDTH)

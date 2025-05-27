@@ -35,9 +35,19 @@ class Block:
                 polygon = [screenSpaceVertices[vertex] for vertex in face if screenSpaceVertices[vertex] is not None]
                 distance = sqrt(sqrt(center[0]**2 + center[1]**2)**2 + center[2]**2)
                 if len(polygon) > 2:
-                    adjustment = int(255 * (-(1 / 2)**(distance / 10) + 1))
-                    pygame.draw.polygon(screen, (0, 255, adjustment), [vertex[:2] for vertex in polygon])
-                    pygame.draw.polygon(screen, (0, adjustment, 255), [vertex[:2] for vertex in polygon], 1)
-                    
+                    adjustment = 255 * (1 / 2)**(distance / 100)
+                    pygame.draw.polygon(screen, (0, 255, 255 - adjustment), [vertex[:2] for vertex in polygon])
+                    pygame.draw.polygon(screen, (0, 255 - adjustment, 255), [vertex[:2] for vertex in polygon], 1)
+
     def shift(self, sX, sY, sZ):
         self.vertices = np.array([vertex + np.array([sX, sY, sZ, 0]) for vertex in self.vertices])
+
+    def getTransformedCenter(self, camera):
+        cameraTransformation = camera.cameraTransformation
+        cameraSpaceVertices = self.vertices @ cameraTransformation
+        center = np.array([0., 0., 0.])
+        vertexCount = 0
+        for vertex in cameraSpaceVertices:
+            center += vertex[:3]
+            vertexCount += 1
+        return center / vertexCount

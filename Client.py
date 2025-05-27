@@ -53,71 +53,62 @@ def getScalingMatrix(sX, sY, sZ):
 
 def translate(vertices, tX, tY, tZ):
     transformation = getTranslationMatrix(tX, tY, tZ)
-    return [vertex @ transformation for vertex in vertices]
+    return vertices @ transformation
 
 def rotate(vertices, rX, rY, rZ):
     transformation = getRotationMatrix(rX, rY, rZ)
-    return [vertex @ transformation for vertex in vertices]
+    return vertices @ transformation
 
 def scale(vertices, sX, sY, sZ):
     transformation = getScalingMatrix(sX, sY, sZ)
-    return [vertex @ transformation for vertex in vertices]
+    return vertices @ transformation
 
 class Geometry:
-    globalBasisVectors = [[
-        np.array([0, 0, 0, 1]),
-        np.array([1, 0, 0, 1]),
-        np.array([0, 1, 0, 1]),
-        np.array([0, 0, 1, 1])
-    ], [
-        [0, 1],
-        [0, 2],
-        [0, 3]
-    ]]
+    camera = [
+        np.array([
+            np.array([0.0, 0.0, 0.0, 1.0]),
+            np.array([-0.25, -0.25, 0.5, 1.0]),
+            np.array([-0.25, 0.25, 0.5, 1.0]),
+            np.array([0.25, 0.25, 0.5, 1.0]),
+            np.array([0.25, -0.25, 0.5, 1.0])
+            ]), [
+                [0, 1, 2], 
+                [0, 2, 3],
+                [0, 3, 4],
+                [0, 4, 1],
+                [1, 4, 3, 2]
+            ]]
     
-    camera = [[
-        np.array([0.0, 0.0, 0.0, 1.0]),
-        np.array([-0.25, -0.25, 0.5, 1.0]),
-        np.array([-0.25, 0.25, 0.5, 1.0]),
-        np.array([0.25, 0.25, 0.5, 1.0]),
-        np.array([0.25, -0.25, 0.5, 1.0]),
-        np.array([0.0, 0.0, 0.5, 1.0])
-    ], [
-        [0, 1, 2],
-        [0, 2, 3],
-        [0, 3, 4],
-        [0, 1, 4]
-    ]]
-    
-    cube = [[
-        np.array([0, 0, 0, 1]),
-        np.array([0, 1, 0, 1]),
-        np.array([1, 1, 0, 1]),
-        np.array([1, 0, 0, 1]),
-        np.array([0, 0, 1, 1]),
-        np.array([0, 1, 1, 1]),
-        np.array([1, 1, 1, 1]),
-        np.array([1, 0, 1, 1])
-        ], [
-            [0, 1, 2, 3],
-            [4, 7, 6, 5],
-            [0, 4, 5, 1],
-            [2, 6, 7, 3],
-            [1, 5, 6, 2],
-            [0, 3, 7, 4]
-        ]]
+    cube = [
+        np.array([
+            np.array([0, 0, 0, 1]),
+            np.array([0, 1, 0, 1]),
+            np.array([1, 1, 0, 1]),
+            np.array([1, 0, 0, 1]),
+            np.array([0, 0, 1, 1]),
+            np.array([0, 1, 1, 1]),
+            np.array([1, 1, 1, 1]),
+            np.array([1, 0, 1, 1])
+            ]), [
+                [0, 1, 2, 3],
+                [4, 7, 6, 5],
+                [0, 4, 5, 1],
+                [2, 6, 7, 3],
+                [1, 5, 6, 2],
+                [0, 3, 7, 4]
+            ]]
 
 
 class Camera:
-    def __init__(self, globalPosition):
+    def __init__(self, globalPosition, pitch, yaw):
         self.globalPosition = globalPosition
-        self.basisVectors = [
+        self.basisVectors = np.array([
             np.array([0, 0, 1, 1]),
             np.array([0, 1, 0, 1]),
             np.array([1, 0, 0, 1])
-        ]
-        self.pitch = 0
-        self.yaw = 0
+        ])
+        self.pitch = pitch
+        self.yaw = yaw
         self.cameraTransformation = self.getCameraTranslation() @ self.getCameraRotation()
         self.translationalSpeed = 0.1
         self.angularSpeed = 0.01
@@ -153,11 +144,11 @@ class Camera:
             self.yaw -= self.angularSpeed
 
     def updateCameraTransformation(self):
-        self.basisVectors = [
+        self.basisVectors = np.array([
             np.array([0, 0, 1, 1]),
             np.array([0, 1, 0, 1]),
             np.array([1, 0, 0, 1])
-        ]
+        ])
         self.basisVectors = rotate(self.basisVectors, self.pitch, self.yaw, 0)
         self.cameraTransformation = self.getCameraTranslation() @ self.getCameraRotation()
     
@@ -194,11 +185,11 @@ class Camera:
             ])
 
 class Player:
-    def __init__(self, globalPosition=globalOrigin, geometry=Geometry.camera):
+    def __init__(self, globalPosition=globalOrigin, pitch=0, yaw=0, geometry=Geometry.camera):
         self.globalPosition = np.array(globalPosition)
+        self.camera = Camera(self.globalPosition, pitch, yaw)
         self.vertices = geometry[0]
         self.faces = geometry[1]
-        self.camera = Camera(self.globalPosition)
         self.name = ""
         self.font = pygame.font.SysFont("Arial", 20)
         
@@ -210,56 +201,77 @@ class Player:
     def project(self, camera, screenTransformation, screen):
         cameraTransformation = camera.cameraTransformation
         projectionMatrix = camera.projectionMatrix
-        globalSpaceVertices = [vertex + np.array([*self.globalPosition[:3], 0.]) for vertex in rotate(self.vertices, self.camera.pitch, self.camera.yaw, 0)]
-        cameraSpaceVertices = [vertex @ cameraTransformation for vertex in globalSpaceVertices]
-        clippingSpaceVertices = [vertex @ projectionMatrix if vertex[2] > 0 else None for vertex in cameraSpaceVertices]
-        normalizedVertices = [[coordinate / vertex[3] for coordinate in vertex] if vertex is not None else None for vertex in clippingSpaceVertices]
-        screenSpaceVertices = [vertex @ screenTransformation if vertex is not None else None for vertex in normalizedVertices]
+        globalSpaceVertices = np.array([vertex + np.array([*self.globalPosition[:3], 0.]) for vertex in rotate(self.vertices, self.camera.pitch, self.camera.yaw, 0)])
+        cameraSpaceVertices = globalSpaceVertices @ cameraTransformation
+        clippingSpaceVertices = cameraSpaceVertices @ projectionMatrix
+        normalizedVertices = np.array([vertex / vertex[3] if camera.nearClippingPlane < vertex[3] < camera.farClippingPlane else np.array([0, 0, 0, 1]) for vertex in clippingSpaceVertices])
+        screenSpaceVertices = normalizedVertices @ screenTransformation
+        screenSpaceVertices = [vertex if vertex[2] > 0 else None for vertex in screenSpaceVertices]
+        
         for face in self.faces:
-            polygon = [screenSpaceVertices[vertex] for vertex in face if screenSpaceVertices[vertex] is not None]
-            if len(polygon) > 1:
-                pygame.draw.polygon(screen, yellow, [vertex[:2] for vertex in polygon], 1)
-        for vertex in screenSpaceVertices:
-            if vertex is not None and 0 <= vertex[0] <= WIDTH and 0 <= vertex[1] <= HEIGHT:
-                pygame.draw.circle(screen, yellow, vertex[:2], 2)
+            polygon = [cameraSpaceVertices[vertex] for vertex in face]
+            a = polygon[0][:3] - polygon[1][:3]
+            b = polygon[2][:3] - polygon[1][:3]
+            normal = np.cross(a, b)
+            center = np.array([0., 0., 0.])
+            vertexCount = 0
+            for vertex in polygon:
+                center += vertex[:3]
+                vertexCount += 1
+            center /= vertexCount
+            dotProduct = np.dot(normal, center)
+            if dotProduct > 0:
+                polygon = [screenSpaceVertices[vertex] for vertex in face if screenSpaceVertices[vertex] is not None]
+                distance = sqrt(sqrt(center[0]**2 + center[1]**2)**2 + center[2]**2)
+                if len(polygon) > 2:
+                    adjustment = int(255 * (-(1 / 2)**(distance / 10) + 1))
+                    pygame.draw.polygon(screen, (255 - adjustment, 255, adjustment), [vertex[:2] for vertex in polygon])
+                    pygame.draw.polygon(screen, (0, adjustment, 255), [vertex[:2] for vertex in polygon], 1)
         if screenSpaceVertices[0] is not None and 0 <= screenSpaceVertices[0][0] <= WIDTH and 0 <= screenSpaceVertices[0][1] <= HEIGHT:
             screen.blit(self.font.render(self.name, True, black, white), [screenSpaceVertices[0][0] - 5 * len(self.name), screenSpaceVertices[0][1] - 10])
 
 class Object3D:
-    def __init__(self, geometry, color=green):
+    def __init__(self, geometry, shift=[0, 0, 0], color=green):
         self.vertices = geometry[0]
         self.faces = geometry[1]
         self.color = color
+        self.shift(*shift)
         
     def project(self, camera, screenTransformation, screen):
         cameraTransformation = camera.cameraTransformation
         projectionMatrix = camera.projectionMatrix
-        cameraSpaceVertices = [vertex @ cameraTransformation for vertex in self.vertices]
-        clippingSpaceVertices = [vertex @ projectionMatrix if vertex[2] > 0 else None for vertex in cameraSpaceVertices]
-        normalizedVertices = [[coordinate / vertex[3] for coordinate in vertex] if vertex is not None else None for vertex in clippingSpaceVertices]
-        screenSpaceVertices = [vertex @ screenTransformation if vertex is not None else None for vertex in normalizedVertices]
+        cameraSpaceVertices = self.vertices @ cameraTransformation
+        clippingSpaceVertices = cameraSpaceVertices @ projectionMatrix
+        normalizedVertices = np.array([vertex / vertex[3] if camera.nearClippingPlane < vertex[3] < camera.farClippingPlane else np.array([0, 0, 0, 1]) for vertex in clippingSpaceVertices])
+        screenSpaceVertices = normalizedVertices @ screenTransformation
+        screenSpaceVertices = [vertex if vertex[2] > 0 else None for vertex in screenSpaceVertices]
         
         for face in self.faces:
-            polygon = [cameraSpaceVertices[vertex] for vertex in face if cameraSpaceVertices[vertex] is not None]
-            vertexCount = len(polygon)
-            if vertexCount > 2:
-                a = polygon[0][:3] - polygon[1][:3]
-                b = polygon[2][:3] - polygon[1][:3]
-                normal = np.cross(a, b)
-                center = np.array([0., 0., 0.])
-                for vertex in polygon:
-                    center += vertex[:3]
-                if np.dot(normal, center) > 0:
-                    polygon = [screenSpaceVertices[vertex] for vertex in face if screenSpaceVertices[vertex] is not None]
-                    pygame.draw.polygon(screen, self.color, [vertex[:2] for vertex in polygon])
-                    pygame.draw.polygon(screen, blue, [vertex[:2] for vertex in polygon], 1)
-                    for vertex in polygon:
-                        if vertex is not None and 0 <= vertex[0] <= WIDTH and 0 <= vertex[1] <= HEIGHT:
-                            pygame.draw.circle(screen, blue, vertex[:2], 2)
+            polygon = [cameraSpaceVertices[vertex] for vertex in face]
+            a = polygon[0][:3] - polygon[1][:3]
+            b = polygon[2][:3] - polygon[1][:3]
+            normal = np.cross(a, b)
+            center = np.array([0., 0., 0.])
+            vertexCount = 0
+            for vertex in polygon:
+                center += vertex[:3]
+                vertexCount += 1
+            center /= vertexCount
+            dotProduct = np.dot(normal, center)
+            if dotProduct > 0:
+                polygon = [screenSpaceVertices[vertex] for vertex in face if screenSpaceVertices[vertex] is not None]
+                distance = sqrt(sqrt(center[0]**2 + center[1]**2)**2 + center[2]**2)
+                if len(polygon) > 2:
+                    adjustment = int(255 * (-(1 / 2)**(distance / 10) + 1))
+                    pygame.draw.polygon(screen, (0, 255, adjustment), [vertex[:2] for vertex in polygon])
+                    pygame.draw.polygon(screen, (0, adjustment, 255), [vertex[:2] for vertex in polygon], 1)
+                    
+    def shift(self, sX, sY, sZ):
+        self.vertices = np.array([vertex + np.array([sX, sY, sZ, 0]) for vertex in self.vertices])
 
 class Engine3D:
     def __init__(self, players, objects):
-        self.screen = pygame.display.set_mode([WIDTH, HEIGHT], pygame.RESIZABLE)
+        self.screen = pygame.display.set_mode([WIDTH, HEIGHT], pygame.DOUBLEBUF | pygame.RESIZABLE)
         self.clock = pygame.time.Clock()
         self.players = players
         self.objects = objects
@@ -298,11 +310,9 @@ def main():
     name = input("Enter your name: ")
     
     pygame.init()
-    players = [Player()]
-    objects = [Object3D(Geometry.cube)]
+    players = [Player([1., 2.5, 1., 1.], 0, -pi / 6)]
+    objects = [Object3D(Geometry.cube, [i, 0, j]) for j in range(10) for i in range(10)]
     engine = Engine3D(players, objects)
-    
-    objects[0].vertices = [vertex + np.array([0.5, 0, 0.5, 0]) for vertex in objects[0].vertices]
     
     client.sendall(pickle.dumps([name, np.append(players[0].globalPosition[:3], 1), players[0].camera.pitch, players[0].camera.yaw]))
     client.settimeout(0.025)

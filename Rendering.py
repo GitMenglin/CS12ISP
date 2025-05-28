@@ -4,14 +4,14 @@ from Constants import *
 
 class Engine3D:
     def __init__(self, players, entities):
-        self.screen = pygame.display.set_mode([Global.WIDTH, Global.HEIGHT], pygame.DOUBLEBUF | pygame.RESIZABLE)
+        self.screen = pygame.display.set_mode([WIDTH, HEIGHT], pygame.DOUBLEBUF | pygame.RESIZABLE)
         self.clock = pygame.time.Clock()
         self.players = players
         self.entities = entities
         self.screenTransformation = self.getScreenTransformation()
         
     def render(self):
-        self.screen.fill(Color.cyan)
+        self.screen.fill(cyan)
         self.players[0].update()
         self.project()
         
@@ -33,8 +33,8 @@ class Engine3D:
             playersArrangement[playerRendered][0].project(self.players[0].camera, self.screenTransformation, self.screen)
             playerRendered += 1
             
-        pygame.draw.line(self.screen, Color.white, [Global.WIDTH / 2 - 10, Global.HEIGHT / 2], [Global.WIDTH / 2 + 10, Global.HEIGHT / 2])
-        pygame.draw.line(self.screen, Color.white, [Global.WIDTH / 2, Global.HEIGHT / 2 - 10], [Global.WIDTH / 2, Global.HEIGHT / 2 + 10])
+        pygame.draw.line(self.screen, white, [WIDTH / 2 - 10, HEIGHT / 2], [WIDTH / 2 + 10, HEIGHT / 2])
+        pygame.draw.line(self.screen, white, [WIDTH / 2, HEIGHT / 2 - 10], [WIDTH / 2, HEIGHT / 2 + 10])
 
     def arrangeEntities(self):
         entitiesArrangement = [[self.entities[0], self.entities[0].getArrangementValue(self.players[0].camera)]]
@@ -75,8 +75,8 @@ class Engine3D:
 
     def getScreenTransformation(self):
         return np.array([
-            [Global.WIDTH / 2, 0, 0, 0],
-            [0, -Global.HEIGHT / 2, 0, 0],
+            [WIDTH / 2, 0, 0, 0],
+            [0, -HEIGHT / 2, 0, 0],
             [0, 0, 1, 0],
-            [Global.WIDTH / 2, Global.HEIGHT / 2, 0, 1]
+            [WIDTH / 2, HEIGHT / 2, 0, 1]
         ])

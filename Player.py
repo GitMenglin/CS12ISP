@@ -6,7 +6,7 @@ from GeometryLib import Geometry
 from Constants import *
 
 class Player:
-    def __init__(self, globalPosition=Global.globalOrigin, pitch=0, yaw=0, geometry=Geometry.camera):
+    def __init__(self, globalPosition=[1., 2.5, 1., 1.], pitch=0, yaw=-pi / 6, geometry=Geometry.camera):
         self.globalPosition = np.array(globalPosition)
         self.camera = Camera(self.globalPosition, pitch, yaw)
         self.vertices = geometry[0]
@@ -48,8 +48,8 @@ class Player:
                     adjustment = 255 * (1 / 2)**(distance / 100)
                     pygame.draw.polygon(screen, (adjustment, 255, 255 - adjustment), [vertex[:2] for vertex in polygon])
                     pygame.draw.polygon(screen, (0, 255 - adjustment, 255), [vertex[:2] for vertex in polygon], 1)
-        if screenSpaceVertices[0] is not None and cameraSpaceVertices[0][2] < 10 and 0 <= screenSpaceVertices[0][0] <= Global.WIDTH and 0 <= screenSpaceVertices[0][1] <= Global.HEIGHT:
-            screen.blit(self.font.render(self.name, True, Color.black, Color.white), [screenSpaceVertices[0][0] - 5 * len(self.name), screenSpaceVertices[0][1] - 10])
+        if screenSpaceVertices[0] is not None and cameraSpaceVertices[0][2] < 10 and 0 <= screenSpaceVertices[0][0] <= WIDTH and 0 <= screenSpaceVertices[0][1] <= HEIGHT:
+            screen.blit(self.font.render(self.name, True, black, white), [screenSpaceVertices[0][0] - 5 * len(self.name), screenSpaceVertices[0][1] - 10])
 
     def getArrangementValue(self, camera):
         cameraTransformation = camera.cameraTransformation

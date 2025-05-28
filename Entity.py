@@ -4,7 +4,7 @@ import numpy as np
 from Constants import *
 
 class Block:
-    def __init__(self, geometry, shift=[0, 0, 0], color=Color.green):
+    def __init__(self, geometry, shift=[0, 0, 0], color=green):
         self.vertices = geometry[0]
         self.faces = geometry[1]
         self.color = color

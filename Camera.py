@@ -19,7 +19,7 @@ class Camera:
         self.angularSpeed = 0.02
         
         self.horizontalFieldOfView = pi / 2
-        self.verticalFieldOfView = self.horizontalFieldOfView * (Global.HEIGHT / Global.WIDTH)
+        self.verticalFieldOfView = self.horizontalFieldOfView * (HEIGHT / WIDTH)
         self.nearClippingPlane = 0.1
         self.farClippingPlane = 100
         self.projectionMatrix = self.getProjectionMatrix()

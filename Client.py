@@ -16,12 +16,12 @@ def main():
     name = input("Enter your name: ")
     
     pygame.init()
-    players = [Player([1., 2.5, 1., 1.], 0, -pi / 6)]
-    entities = [Block(Geometry.cube, [i, 0, j]) for j in range(8) for i in range(8)]
+    players = [Player()]
+    entities = [Block(Geometry.cube, [i, 0, j]) for j in range(10) for i in range(10)]
     engine = Engine3D(players, entities)
     
     client.sendall(pickle.dumps([name, np.append(players[0].globalPosition[:3], 1), players[0].camera.pitch, players[0].camera.yaw]))
-    client.settimeout(0.05)
+    client.settimeout(0.025)
     
     done = False
     while not done:

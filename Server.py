@@ -10,7 +10,7 @@ def handleClient(connection, playerId):
             break
         except:
             continue
-    connection.settimeout(0.025)
+    connection.settimeout(0.05)
     while True:
         try:
             playerCount = len(players)

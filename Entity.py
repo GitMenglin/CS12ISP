@@ -25,10 +25,12 @@ class Block:
         center /= vertexCount
         arrangementValue = sqrt(sqrt(center[0]**2 + center[1]**2)**2 + center[2]**2)
         
-        if center[2] < 5 and -0.5 < center[0] < 0.5 and -0.5 < center[1] < 0.5:
+        xBoundary = 0.5 + 0.1 * cos(camera.pitch - pi / 6)
+        yBoundary = 0.5 + 0.2 * cos(camera.pitch)
+        if center[2] < 5 and -xBoundary < center[0] < xBoundary and -yBoundary < center[1] < yBoundary:
             if Block.target is None:
                 Block.target = [self, arrangementValue]
-            elif Block.target[1] > arrangementValue:
+            elif arrangementValue < Block.target[1]:
                 Block.target = [self, arrangementValue]
         
         return arrangementValue

@@ -1,11 +1,21 @@
 import socket
 import pickle
-import pygame
-import numpy as np
+import subprocess
+import sys
 from GeometryLib import Geometry
 from Player import Player
 from Entity import *
 from Rendering import Engine3D
+
+try:
+    import pygame
+except ImportError:
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "pygame"])
+
+try:
+    import numpy as np
+except ImportError:
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "numpy"])
 
 def main():
     ip = socket.gethostbyname(socket.gethostname())

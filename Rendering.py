@@ -40,7 +40,7 @@ class Engine3D:
 
     def arrangeEntities(self):
         entitiesArrangement = [[self.entities[0], self.entities[0].getArrangementValue(self.players[0].camera)]]
-        for entity in self.entities:
+        for entity in self.entities[1:]:
             entitiesArranged = []
             inserted = False
             arrangementValue = entity.getArrangementValue(self.players[0].camera)

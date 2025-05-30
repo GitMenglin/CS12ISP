@@ -1,5 +1,5 @@
 import pygame
-import numpy as np
+from Entity import Block
 from Constants import *
 
 class Engine3D:
@@ -8,7 +8,6 @@ class Engine3D:
         self.clock = pygame.time.Clock()
         self.players = players
         self.entities = entities
-        self.screenTransformation = self.getScreenTransformation()
         
     def render(self):
         self.screen.fill(cyan)
@@ -19,20 +18,23 @@ class Engine3D:
         self.clock.tick(60)
 
     def project(self):
+        Block.target = None
         entitiesArrangement = self.arrangeEntities()
+        if Block.target is not None:
+            Block.target[0].selected = True
         playersArrangement, playerCount = self.arrangePlayers()
         
         playerRendered = 0
         for entity in entitiesArrangement:
             while (playerRendered < playerCount and 
                    playersArrangement[playerRendered][1] > entity[1]):
-                playersArrangement[playerRendered][0].project(self.players[0].camera, self.screenTransformation, self.screen)
+                playersArrangement[playerRendered][0].project(self.players[0].camera, self.screen)
                 playerRendered += 1
-            entity[0].project(self.players[0].camera, self.screenTransformation, self.screen)
+            entity[0].project(self.screen)
         while playerRendered < playerCount:
-            playersArrangement[playerRendered][0].project(self.players[0].camera, self.screenTransformation, self.screen)
+            playersArrangement[playerRendered][0].project(self.players[0].camera, self.screen)
             playerRendered += 1
-            
+        
         pygame.draw.line(self.screen, white, [WIDTH / 2 - 10, HEIGHT / 2], [WIDTH / 2 + 10, HEIGHT / 2])
         pygame.draw.line(self.screen, white, [WIDTH / 2, HEIGHT / 2 - 10], [WIDTH / 2, HEIGHT / 2 + 10])
 
@@ -72,11 +74,3 @@ class Engine3D:
             return [playersArrangement, playerCount]
         else:
             return [[], 0]
-
-    def getScreenTransformation(self):
-        return np.array([
-            [WIDTH / 2, 0, 0, 0],
-            [0, -HEIGHT / 2, 0, 0],
-            [0, 0, 1, 0],
-            [WIDTH / 2, HEIGHT / 2, 0, 1]
-        ])

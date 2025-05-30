@@ -13,7 +13,8 @@ def main():
     address = (ip, port)
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client.connect(address)
-    name = input("Enter your name: ")
+    # name = input("Enter your name: ")
+    name = "Steve"
     
     pygame.init()
     players = [Player()]

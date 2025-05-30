@@ -18,12 +18,6 @@ class Camera:
         self.translationalSpeed = 0.08
         self.angularSpeed = 0.02
         
-        self.horizontalFieldOfView = pi / 2
-        self.verticalFieldOfView = self.horizontalFieldOfView * (HEIGHT / WIDTH)
-        self.nearClippingPlane = 0.1
-        self.farClippingPlane = 100
-        self.projectionMatrix = self.getProjectionMatrix()
-        
     def control(self):
         keyPressed = pygame.key.get_pressed()
         if keyPressed[pygame.K_w]:
@@ -73,18 +67,4 @@ class Camera:
             [basisX[1], basisY[1], basisZ[1] ,0],
             [basisX[2], basisY[2], basisZ[2] ,0],
             [0, 0, 0 ,1]
-            ])
-
-    def getProjectionMatrix(self):
-        near = self.nearClippingPlane
-        far = self.farClippingPlane
-        right = tan(self.horizontalFieldOfView / 2)
-        left = -right
-        top = tan(self.verticalFieldOfView / 2)
-        bottom = -top
-        return np.array([
-            [2 / (right - left), 0, 0, 0],
-            [0, 2 / (top - bottom), 0, 0],
-            [0, 0, (far + near) / (far - near), 1],
-            [0, 0, -2 * far * near / (far - near), 0]
             ])

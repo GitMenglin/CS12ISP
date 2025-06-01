@@ -10,12 +10,12 @@ from Rendering import Engine3D
 try:
     import pygame
 except ImportError:
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "pygame"])
+    subprocess.call([sys.executable, "-m", "pip", "install", "pygame"])
 
 try:
     import numpy as np
 except ImportError:
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "numpy"])
+    subprocess.call([sys.executable, "-m", "pip", "install", "numpy"])
 
 def main():
     ip = socket.gethostbyname(socket.gethostname())

@@ -1,5 +1,6 @@
 import pygame
 from Entity import Block
+from GeometryLib import Geometry
 from Constants import *
 
 class Engine3D:
@@ -8,6 +9,8 @@ class Engine3D:
         self.clock = pygame.time.Clock()
         self.players = players
         self.entities = entities
+        self.excavateStart = 0
+        self.coolDownStart = 0
         
     def render(self):
         self.screen.fill(cyan)
@@ -20,8 +23,20 @@ class Engine3D:
     def project(self):
         Block.target = None
         entitiesArrangement = self.arrangeEntities()
+        
         if Block.target is not None:
             Block.target[0].selected = True
+            if not pygame.mouse.get_pressed()[0]:
+                self.excavateStart = pygame.time.get_ticks()
+            elif pygame.mouse.get_pressed()[0] and pygame.time.get_ticks() - self.excavateStart > 1000:
+                self.entities.remove(Block.target[0])
+                self.excavateStart = pygame.time.get_ticks()
+            if pygame.mouse.get_pressed()[2] and pygame.time.get_ticks() - self.coolDownStart > 200:
+                self.placeBlock(Block.target[0])
+                self.coolDownStart = pygame.time.get_ticks()
+        else:
+            self.excavateStart = pygame.time.get_ticks()
+        
         playersArrangement, playerCount = self.arrangePlayers()
         
         playerRendered = 0
@@ -37,6 +52,10 @@ class Engine3D:
         
         pygame.draw.line(self.screen, white, [WIDTH / 2 - 10, HEIGHT / 2], [WIDTH / 2 + 10, HEIGHT / 2])
         pygame.draw.line(self.screen, white, [WIDTH / 2, HEIGHT / 2 - 10], [WIDTH / 2, HEIGHT / 2 + 10])
+        
+    def placeBlock(self, target):
+        x, y, z = target.placement
+        self.entities.append(Block(Geometry.cube, [x, y + 1, z]))
 
     def arrangeEntities(self):
         entitiesArrangement = [[self.entities[0], self.entities[0].getArrangementValue(self.players[0].camera)]]

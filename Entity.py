@@ -6,11 +6,12 @@ from Constants import *
 class Block:
     target = None
     
-    def __init__(self, geometry, shift=[0, 0, 0], color=green):
+    def __init__(self, geometry, placement=[0, 0, 0], color=green):
         self.vertices = geometry[0]
         self.faces = geometry[1]
         self.color = color
-        self.shift(*shift)
+        self.placement = placement
+        self.shift(*self.placement)
         self.cameraSpaceVertices = None
         self.selected = False
 

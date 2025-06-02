@@ -5,13 +5,17 @@ from Constants import *
 
 class Block:
     target = None
+    targetFaceNormal = None
+    normalsArranged = [np.array([0, 0, -1, 0]), np.array([0, 0, 1, 0]), 
+                       np.array([-1, 0, 0, 0]), np.array([1, 0, 0, 0]),
+                       np.array([0, 1, 0, 0]), np.array([0, -1, 0, 0])]
     
-    def __init__(self, geometry, placement=[0, 0, 0], color=green):
+    def __init__(self, geometry, placement=[0, 0, 0, 0], color=green):
         self.vertices = geometry[0]
         self.faces = geometry[1]
         self.color = color
-        self.placement = placement
-        self.shift(*self.placement)
+        self.placement = np.array(placement)
+        self.shift(self.placement)
         self.cameraSpaceVertices = None
         self.selected = False
 
@@ -42,8 +46,8 @@ class Block:
         screenSpaceVertices = normalizedVertices @ screenTransformation
         screenSpaceVertices = [vertex if vertex[2] > 0 else None for vertex in screenSpaceVertices]
         
-        for face in self.faces:
-            polygon = [self.cameraSpaceVertices[vertex] for vertex in face]
+        for i in range(len(self.faces)):
+            polygon = [self.cameraSpaceVertices[vertex] for vertex in self.faces[i]]
             a = polygon[0][:3] - polygon[1][:3]
             b = polygon[2][:3] - polygon[1][:3]
             normal = np.cross(a, b)
@@ -55,16 +59,20 @@ class Block:
             center /= vertexCount
             dotProduct = np.dot(normal, center)
             if dotProduct > 0:
-                polygon = [screenSpaceVertices[vertex] for vertex in face if screenSpaceVertices[vertex] is not None]
+                polygon = [screenSpaceVertices[vertex] for vertex in self.faces[i] if screenSpaceVertices[vertex] is not None]
                 distance = sqrt(sqrt(center[0]**2 + center[1]**2)**2 + center[2]**2)
                 if len(polygon) > 2:
                     adjustment = 255 * (1 / 2)**(distance / 100)
                     if self.selected:
                         pygame.draw.polygon(screen, red, [vertex[:2] for vertex in polygon])
+                        if Block.targetFaceNormal is None:
+                            Block.targetFaceNormal = [Block.normalsArranged[i], distance]
+                        elif distance < Block.targetFaceNormal[1]:
+                            Block.targetFaceNormal = [Block.normalsArranged[i], distance]
                     else:
                         pygame.draw.polygon(screen, (0, 255, 255 - adjustment), [vertex[:2] for vertex in polygon])
                     pygame.draw.polygon(screen, (0, 255 - adjustment, 255), [vertex[:2] for vertex in polygon], 1)
         self.selected = False
 
-    def shift(self, sX, sY, sZ):
-        self.vertices = np.array([vertex + np.array([sX, sY, sZ, 0]) for vertex in self.vertices])
+    def shift(self, placement):
+        self.vertices = np.array([vertex + placement for vertex in self.vertices])

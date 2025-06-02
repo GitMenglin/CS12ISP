@@ -12,35 +12,37 @@ class Camera:
             np.array([0, 1, 0, 1]),
             np.array([1, 0, 0, 1])
         ])
+        self.velocity = self.basisVectors
         self.pitch = pitch
         self.yaw = yaw
         self.cameraTransformation = self.getCameraTranslation() @ self.getCameraRotation()
         self.translationalSpeed = 0.08
         self.angularSpeed = 0.02
+        self.wasPaused = False
         
-    def control(self):
-        keyPressed = pygame.key.get_pressed()
-        if keyPressed[pygame.K_w]:
-            self.globalPosition += self.basisVectors[0] * self.translationalSpeed
-        if keyPressed[pygame.K_s]:
-            self.globalPosition -= self.basisVectors[0] * self.translationalSpeed
-        if keyPressed[pygame.K_SPACE]:
-            self.globalPosition += self.basisVectors[1] * self.translationalSpeed
-        if keyPressed[pygame.K_LSHIFT]:
-            self.globalPosition -= self.basisVectors[1] * self.translationalSpeed
-        if keyPressed[pygame.K_d]:
-            self.globalPosition += self.basisVectors[2] * self.translationalSpeed
-        if keyPressed[pygame.K_a]:
-            self.globalPosition -= self.basisVectors[2] * self.translationalSpeed
+    def control(self, paused):
+        if not paused:
+            keyPressed = pygame.key.get_pressed()
+            if keyPressed[pygame.K_w]:
+                self.globalPosition += self.velocity[0] * self.translationalSpeed
+            if keyPressed[pygame.K_s]:
+                self.globalPosition -= self.velocity[0] * self.translationalSpeed
+            if keyPressed[pygame.K_SPACE]:
+                self.globalPosition += np.array([0, 1, 0, 1]) * self.translationalSpeed
+            if keyPressed[pygame.K_LSHIFT]:
+                self.globalPosition -= np.array([0, 1, 0, 1]) * self.translationalSpeed
+            if keyPressed[pygame.K_d]:
+                self.globalPosition += self.velocity[2] * self.translationalSpeed
+            if keyPressed[pygame.K_a]:
+                self.globalPosition -= self.velocity[2] * self.translationalSpeed
 
-        if keyPressed[pygame.K_UP]:
-            self.pitch += self.angularSpeed
-        if keyPressed[pygame.K_DOWN]:
-            self.pitch -= self.angularSpeed
-        if keyPressed[pygame.K_LEFT]:
-            self.yaw += self.angularSpeed
-        if keyPressed[pygame.K_RIGHT]:
-            self.yaw -= self.angularSpeed
+            x, y = pygame.mouse.get_rel()
+            if self.wasPaused:
+                x, y = 0, 0
+            if y > 0 and self.pitch > -pi / 2 or y < 0 and self.pitch < pi / 2:
+                self.pitch -= y * self.angularSpeed
+            self.yaw -= x * self.angularSpeed
+        self.wasPaused = paused
 
     def updateCameraTransformation(self):
         self.basisVectors = np.array([
@@ -48,6 +50,7 @@ class Camera:
             np.array([0, 1, 0, 1]),
             np.array([1, 0, 0, 1])
         ])
+        self.velocity = rotate(self.basisVectors, 0, self.yaw, 0)
         self.basisVectors = rotate(self.basisVectors, self.pitch, self.yaw, 0)
         self.cameraTransformation = self.getCameraTranslation() @ self.getCameraRotation()
     

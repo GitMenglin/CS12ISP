@@ -14,8 +14,8 @@ class Player:
         self.name = ""
         self.font = pygame.font.SysFont("Arial", 20)
 
-    def update(self):
-        self.camera.control()
+    def update(self, paused):
+        self.camera.control(paused)
         self.globalPosition = self.camera.globalPosition
         self.camera.updateCameraTransformation()
 

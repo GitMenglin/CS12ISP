@@ -6,16 +6,15 @@ from GeometryLib import Geometry
 from Player import Player
 from Entity import *
 from Rendering import Engine3D
-
 try:
     import pygame
 except ImportError:
     subprocess.call([sys.executable, "-m", "pip", "install", "pygame"])
-
 try:
     import numpy as np
 except ImportError:
     subprocess.call([sys.executable, "-m", "pip", "install", "numpy"])
+
 
 def main():
     ip = socket.gethostbyname(socket.gethostname())
@@ -25,10 +24,13 @@ def main():
     client.connect(address)
     # name = input("Enter your name: ")
     name = "Steve"
+    paused = False
+    escCoolDownStart = 0
     
     pygame.init()
+    pygame.mouse.set_visible(paused)
     players = [Player()]
-    entities = [Block(Geometry.cube, [i, 0, j]) for j in range(10) for i in range(10)]
+    entities = [Block(Geometry.cube, [i, 0, j, 0]) for j in range(10) for i in range(10)]
     engine = Engine3D(players, entities)
     
     client.sendall(pickle.dumps([name, np.append(players[0].globalPosition[:3], 1), players[0].camera.pitch, players[0].camera.yaw]))
@@ -50,8 +52,12 @@ def main():
         except:
             pass
         
+        if pygame.key.get_pressed()[pygame.K_ESCAPE] and pygame.time.get_ticks() - escCoolDownStart > 200:
+            paused = not paused
+            pygame.mouse.set_visible(paused)
+            escCoolDownStart = pygame.time.get_ticks()
         pygame.display.set_caption(f"{name}: {[int(coordinate) for coordinate in players[0].globalPosition[:3]]}")
-        engine.render()
+        engine.render(paused)
         
     client.close()
     pygame.quit()

@@ -33,8 +33,8 @@ def main():
     entities = [Block(Geometry.cube, [i, 0, j, 0]) for j in range(10) for i in range(10)]
     engine = Engine3D(players, entities)
     
-    client.sendall(pickle.dumps([name, np.append(players[0].globalPosition[:3], 1), players[0].camera.pitch, players[0].camera.yaw]))
-    client.settimeout(0.025)
+    client.sendall(pickle.dumps([name, np.append(players[0].globalPosition[:3], 1), players[0].camera.pitch, players[0].camera.yaw, engine.synchronization]))
+    client.settimeout(0.05)
     
     done = False
     while not done:
@@ -46,11 +46,23 @@ def main():
             playerCount = pickle.loads(client.recv(20))
             while playerCount > len(players):
                 players.append(Player())
-            client.sendall(pickle.dumps([name, np.append(players[0].globalPosition[:3], 1), players[0].camera.pitch, players[0].camera.yaw]))
+            client.sendall(pickle.dumps([name, np.append(players[0].globalPosition[:3], 1), players[0].camera.pitch, players[0].camera.yaw, engine.synchronization]))
             for i in range(playerCount - 1):
-                players[i + 1].name, players[i + 1].globalPosition, players[i + 1].camera.pitch, players[i + 1].camera.yaw = pickle.loads(client.recv(256))
-        except:
-            pass
+                raw = pickle.loads(client.recv(1024 * 5))
+                if isinstance(raw, list):
+                    players[i + 1].name, players[i + 1].globalPosition, players[i + 1].camera.pitch, players[i + 1].camera.yaw, synchronization = raw
+                    if synchronization is not None:
+                        try:
+                            engine.entities.pop(int(synchronization))
+                            print("excavated")
+                        except IndexError:
+                            engine.entities.pop(int(synchronization) - 1)
+                            print("excavated")
+                        except TypeError:
+                            engine.entities.append(Block(Geometry.cube, synchronization))
+                            print("placed")
+        except Exception as e:
+            print(f"{type(e)}: {e}")
         
         if pygame.key.get_pressed()[pygame.K_ESCAPE] and pygame.time.get_ticks() - escCoolDownStart > 200:
             paused = not paused

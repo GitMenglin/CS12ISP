@@ -6,18 +6,27 @@ from GeometryLib import Geometry
 from Constants import *
 
 class Player:
-    def __init__(self, globalPosition=[1., 2.5, 1., 1.], pitch=0, yaw=-pi / 6, geometry=Geometry.camera):
+    def __init__(self, globalPosition=[1., 3., 1., 1.], pitch=0, yaw=-pi / 6, geometry=Geometry.camera):
         self.globalPosition = np.array(globalPosition)
         self.camera = Camera(self.globalPosition, pitch, yaw)
         self.vertices = geometry[0]
         self.faces = geometry[1]
         self.name = ""
         self.font = pygame.font.SysFont("Arial", 20)
+        self.collided = False
+        self.velocityY = 0.08
 
     def update(self, paused):
         self.camera.control(paused)
         self.globalPosition = self.camera.globalPosition
         self.camera.updateCameraTransformation()
+        # if not paused and not self.collided:
+        #     self.camera.globalPosition -= np.array([0, 1, 0, 1]) * self.velocityY
+        
+    def checkCollision(self, block):
+        x, y, z = block.cameraSpaceCenter
+        if y >= -2:
+            self.collided = True
 
     def getArrangementValue(self, camera):
         cameraTransformation = camera.cameraTransformation

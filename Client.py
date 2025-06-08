@@ -15,15 +15,18 @@ try:
 except ImportError:
     subprocess.call([sys.executable, "-m", "pip", "install", "numpy"])
 
+debug = False
 
 def main():
     ip = socket.gethostbyname(socket.gethostname())
     port = 1234
     address = (ip, port)
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client.connect(address)
-    # name = input("Enter your name: ")
-    name = "Steve"
+    try:
+        client.connect(address)
+        name = input("Enter your name: ")
+    except:
+        name = "Herobrine"
     paused = False
     escCoolDownStart = 0
     
@@ -33,8 +36,11 @@ def main():
     entities = [Block(Geometry.cube, [i, 0, j, 0]) for j in range(10) for i in range(10)]
     engine = Engine3D(players, entities)
     
-    client.sendall(pickle.dumps([name, np.append(players[0].globalPosition[:3], 1), players[0].camera.pitch, players[0].camera.yaw, engine.synchronization]))
-    client.settimeout(0.05)
+    try:
+        client.sendall(pickle.dumps([name, np.append(players[0].globalPosition[:3], 1), players[0].camera.pitch, players[0].camera.yaw, engine.synchronization]))
+        client.settimeout(0.05)
+    except:
+        pass
     
     done = False
     while not done:
@@ -62,13 +68,15 @@ def main():
                             engine.entities.append(Block(Geometry.cube, synchronization))
                             print("placed")
         except Exception as e:
-            print(f"{type(e)}: {e}")
+            if debug:
+                print(f"{type(e)}: {e}")
         
         if pygame.key.get_pressed()[pygame.K_ESCAPE] and pygame.time.get_ticks() - escCoolDownStart > 200:
             paused = not paused
             pygame.mouse.set_visible(paused)
             escCoolDownStart = pygame.time.get_ticks()
-        pygame.display.set_caption(f"{name}: {[int(coordinate) for coordinate in players[0].globalPosition[:3]]}")
+        playerCoords = [round(coordinate.item(), 2) for coordinate in players[0].globalPosition[:3]]
+        pygame.display.set_caption(f"{name}: {playerCoords}")
         engine.render(paused)
         
     client.close()

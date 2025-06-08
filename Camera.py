@@ -12,7 +12,7 @@ class Camera:
             np.array([0, 1, 0, 1]),
             np.array([1, 0, 0, 1])
         ])
-        self.velocity = self.basisVectors
+        self.horizontalBasisVectors = self.basisVectors
         self.pitch = pitch
         self.yaw = yaw
         self.cameraTransformation = self.getCameraTranslation() @ self.getCameraRotation()
@@ -22,19 +22,8 @@ class Camera:
         
     def control(self, paused):
         if not paused:
-            keyPressed = pygame.key.get_pressed()
-            if keyPressed[pygame.K_w]:
-                self.globalPosition += self.velocity[0] * self.translationalSpeed
-            if keyPressed[pygame.K_s]:
-                self.globalPosition -= self.velocity[0] * self.translationalSpeed
-            if keyPressed[pygame.K_SPACE]:
-                self.globalPosition += np.array([0, 1, 0, 1]) * self.translationalSpeed
-            if keyPressed[pygame.K_LSHIFT]:
-                self.globalPosition -= np.array([0, 1, 0, 1]) * self.translationalSpeed
-            if keyPressed[pygame.K_d]:
-                self.globalPosition += self.velocity[2] * self.translationalSpeed
-            if keyPressed[pygame.K_a]:
-                self.globalPosition -= self.velocity[2] * self.translationalSpeed
+            self.globalPosition += self.horizontalBasisVectors[0] * self.translationalSpeed
+            self.globalPosition += self.horizontalBasisVectors[2] * self.translationalSpeed
 
             x, y = pygame.mouse.get_rel()
             if self.wasPaused:
@@ -44,16 +33,26 @@ class Camera:
             self.yaw -= x * self.angularSpeed
         self.wasPaused = paused
 
-    def updateCameraTransformation(self):
+    def update(self):
         self.basisVectors = np.array([
             np.array([0, 0, 1, 1]),
             np.array([0, 1, 0, 1]),
             np.array([1, 0, 0, 1])
         ])
-        self.velocity = rotate(self.basisVectors, 0, self.yaw, 0)
+        self.horizontalBasisVectors = rotate(self.basisVectors, 0, self.yaw, 0)
         self.basisVectors = rotate(self.basisVectors, self.pitch, self.yaw, 0)
         self.cameraTransformation = self.getCameraTranslation() @ self.getCameraRotation()
-    
+        
+        keyPressed = pygame.key.get_pressed()
+        if keyPressed[pygame.K_s]:
+            self.horizontalBasisVectors[0] *= -1
+        elif not keyPressed[pygame.K_w]:
+            self.horizontalBasisVectors[0] *= 0
+        if keyPressed[pygame.K_a]:
+            self.horizontalBasisVectors[2] *= -1
+        elif not keyPressed[pygame.K_d]:
+            self.horizontalBasisVectors[2] *= 0
+
     def getCameraTranslation(self):
         x, y, z, _ = self.globalPosition
         return np.array([

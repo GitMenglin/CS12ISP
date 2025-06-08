@@ -16,53 +16,49 @@ class Block:
         self.placement = np.array(placement)
         self.shift(self.placement)
         self.cameraSpaceVertices = None
-        self.cameraSpaceCenter = None
+        self.cameraRelativeCenter = None
         self.transformedFaces = None
         self.selected = False
 
     def preprocess(self, camera):
         self.cameraSpaceVertices = self.vertices @ camera.cameraTransformation
+        self.cameraRelativeCenter = self.placement[:3] + np.array([0.5, 0.5, 0.5]) - camera.globalPosition[:3]
         clippingSpaceVertices = self.cameraSpaceVertices @ projectionMatrix
         normalizedVertices = np.array([vertex / vertex[3] if nearClippingPlane < vertex[3] < farClippingPlane else np.array([0, 0, 0, 1]) for vertex in clippingSpaceVertices])
         screenSpaceVertices = normalizedVertices @ screenTransformation
         screenSpaceVertices = [vertex if vertex[2] > 0 else None for vertex in screenSpaceVertices]
         
-        blockCenter = np.array([0., 0., 0.])
         self.selected = False
         self.transformedFaces = []
         faceCount = len(self.faces)
         for i in range(faceCount):
-            polygon = [self.cameraSpaceVertices[vertex] for vertex in self.faces[i]]
-            a = polygon[0][:3] - polygon[1][:3]
-            b = polygon[2][:3] - polygon[1][:3]
+            transformedPolygon = [self.cameraSpaceVertices[vertex] for vertex in self.faces[i]]
+            a = transformedPolygon[0][:3] - transformedPolygon[1][:3]
+            b = transformedPolygon[2][:3] - transformedPolygon[1][:3]
             normal = np.cross(a, b)
             faceCenter = np.array([0., 0., 0.])
             vertexCount = 0
-            for vertex in polygon:
+            for vertex in transformedPolygon:
                 faceCenter += vertex[:3]
                 vertexCount += 1
             faceCenter /= vertexCount
             culled = np.dot(normal, faceCenter) <= 0
             distance = sqrt(sqrt(faceCenter[0]**2 + faceCenter[1]**2)**2 + faceCenter[2]**2)
-            blockCenter += faceCenter
             
             if not culled:
-                if len(polygon) == 4:
-                    if faceCenter[2] < 5 and np.dot(polygon[0][:2], polygon[2][:2]) + np.dot(polygon[1][:2], polygon[3][:2]) < -0.3:
+                if len(transformedPolygon) == 4:
+                    if faceCenter[2] < 5 and np.dot(transformedPolygon[0][:2], transformedPolygon[2][:2]) + np.dot(transformedPolygon[1][:2], transformedPolygon[3][:2]) < -0.3:
                         if Block.target is None:
                             Block.target = [self, i, distance]
                         elif distance < Block.target[2]:
                             Block.target = [self, i, distance]
                 
-                polygon = [screenSpaceVertices[vertex] for vertex in self.faces[i] if screenSpaceVertices[vertex] is not None]
-                self.transformedFaces.append([polygon, distance])
+                transformedPolygon = [screenSpaceVertices[vertex] for vertex in self.faces[i] if screenSpaceVertices[vertex] is not None]
+                self.transformedFaces.append([transformedPolygon, distance])
             else:
                 self.transformedFaces.append(None)
         
-        blockCenter /= faceCount
-        arrangementValue = sqrt(sqrt(blockCenter[0]**2 + blockCenter[1]**2)**2 + blockCenter[2]**2)
-        self.cameraSpaceCenter = blockCenter
-        return arrangementValue
+        return sqrt(sqrt(self.cameraRelativeCenter[0]**2 + self.cameraRelativeCenter[1]**2)**2 + self.cameraRelativeCenter[2]**2)
 
     def project(self, screen):
         for i in range(len(self.transformedFaces)):

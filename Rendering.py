@@ -43,15 +43,18 @@ class Engine3D:
             self.excavateStart = pygame.time.get_ticks()
         
         playerRendered = 0
-        self.players[0].collided = False
+        self.players[0].landed = False
         for entity in entitiesArrangement:
             while (playerRendered < playerCount and 
                    playersArrangement[playerRendered][1] > entity[1]):
                 playersArrangement[playerRendered][0].project(self.players[0].camera, self.screen)
                 playerRendered += 1
             entity[0].project(self.screen)
-            if abs(entity[0].cameraSpaceCenter[0]) <= 0.75 and abs(entity[0].cameraSpaceCenter[2]) <= 0.75:
-                self.players[0].checkCollision(entity[0])
+            horizontalDistance = sqrt(entity[0].cameraRelativeCenter[0]**2 + entity[0].cameraRelativeCenter[2]**2)
+            if horizontalDistance <= 1.25:
+                self.players[0].checkCollisionHorizontal(entity[0])
+            if horizontalDistance <= 0.75:
+                self.players[0].checkCollisionVertical(entity[0])
         while playerRendered < playerCount:
             playersArrangement[playerRendered][0].project(self.players[0].camera, self.screen)
             playerRendered += 1

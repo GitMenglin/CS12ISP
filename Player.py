@@ -6,37 +6,76 @@ from GeometryLib import Geometry
 from Constants import *
 
 class Player:
-    def __init__(self, globalPosition=[1., 3., 1., 1.], pitch=0, yaw=-pi / 6, geometry=Geometry.camera):
+    def __init__(self, globalPosition=[1., 2.5, 1., 1.], pitch=0, yaw=-pi / 6, geometry=Geometry.camera):
         self.globalPosition = np.array(globalPosition)
         self.camera = Camera(self.globalPosition, pitch, yaw)
         self.vertices = geometry[0]
         self.faces = geometry[1]
         self.name = ""
         self.font = pygame.font.SysFont("Arial", 20)
-        self.collided = False
-        self.velocityY = 0.08
+        self.velocityY = -0.01
+        self.landed = False
+        self.jumpCoolDownStart = 0
 
     def update(self, paused):
         self.camera.control(paused)
         self.globalPosition = self.camera.globalPosition
-        self.camera.updateCameraTransformation()
-        # if not paused and not self.collided:
-        #     self.camera.globalPosition -= np.array([0, 1, 0, 1]) * self.velocityY
+        self.camera.update()
         
-    def checkCollision(self, block):
-        x, y, z = block.cameraSpaceCenter
-        if y >= -2:
-            self.collided = True
+        if not paused:
+            if pygame.key.get_pressed()[pygame.K_SPACE] and self.landed and pygame.time.get_ticks() - self.jumpCoolDownStart > 600:
+                self.velocityY = 0.125
+                self.jumpCoolDownStart = pygame.time.get_ticks()
+            self.camera.globalPosition += np.array([0, 1, 0, 1]) * self.velocityY
+            self.velocityY -= 0.01
+
+    def checkCollisionHorizontal(self, block):
+        x, y, z = block.cameraRelativeCenter
+        
+        if -1.75 <= y <= 0.75:
+            if abs(x) <= 0.5:
+                if 0 < z <= 0.7:
+                    for basis in self.camera.horizontalBasisVectors:
+                        if basis[2] > 0:
+                            basis[2] = 0
+                    self.landed = True
+                elif -0.7 <= z < 0:
+                    for basis in self.camera.horizontalBasisVectors:
+                        if basis[2] < 0:
+                            basis[2] = 0
+                    self.landed = True
+            if abs(z) <= 0.5:
+                if 0 < x <= 0.7:
+                    for basis in self.camera.horizontalBasisVectors:
+                        if basis[0] > 0:
+                            basis[0] = 0
+                    self.landed = True
+                elif -0.7 <= x < 0:
+                    for basis in self.camera.horizontalBasisVectors:
+                        if basis[0] < 0:
+                            basis[0] = 0
+                    self.landed = True
+
+    def checkCollisionVertical(self, block):
+        x, y, z = block.cameraRelativeCenter
+        
+        landing = -2 <= y <= 0
+        if not self.landed and landing:
+            self.velocityY = 0
+        if self.landed and not landing:
+            self.velocityY = -0.01
+        self.landed = landing
+        
+        if self.landed and abs(x) < 0.5 and abs(z) < 0.5:
+            self.camera.globalPosition[1] += y + 2
 
     def getArrangementValue(self, camera):
-        cameraTransformation = camera.cameraTransformation
-        cameraSpacePosition = self.globalPosition @ cameraTransformation
+        cameraSpacePosition = self.globalPosition @ camera.cameraTransformation
         return sqrt(sqrt(cameraSpacePosition[0]**2 + cameraSpacePosition[1]**2)**2 + cameraSpacePosition[2]**2)
 
     def project(self, camera, screen):
-        cameraTransformation = camera.cameraTransformation
         globalSpaceVertices = np.array([vertex + np.array([*self.globalPosition[:3], 0.]) for vertex in rotate(self.vertices, self.camera.pitch, self.camera.yaw, 0)])
-        cameraSpaceVertices = globalSpaceVertices @ cameraTransformation
+        cameraSpaceVertices = globalSpaceVertices @ camera.cameraTransformation
         clippingSpaceVertices = cameraSpaceVertices @ projectionMatrix
         normalizedVertices = np.array([vertex / vertex[3] if nearClippingPlane < vertex[3] < farClippingPlane else np.array([0, 0, 0, 1]) for vertex in clippingSpaceVertices])
         screenSpaceVertices = normalizedVertices @ screenTransformation

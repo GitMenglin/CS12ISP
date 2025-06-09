@@ -35,23 +35,23 @@ class Player:
         if -1.75 <= y <= 0.75:
             if abs(x) <= 0.5:
                 if 0 < z <= 0.7:
-                    for basis in self.camera.horizontalBasisVectors:
+                    for basis in self.camera.basisVelocities:
                         if basis[2] > 0:
                             basis[2] = 0
                     self.landed = True
                 elif -0.7 <= z < 0:
-                    for basis in self.camera.horizontalBasisVectors:
+                    for basis in self.camera.basisVelocities:
                         if basis[2] < 0:
                             basis[2] = 0
                     self.landed = True
             if abs(z) <= 0.5:
                 if 0 < x <= 0.7:
-                    for basis in self.camera.horizontalBasisVectors:
+                    for basis in self.camera.basisVelocities:
                         if basis[0] > 0:
                             basis[0] = 0
                     self.landed = True
                 elif -0.7 <= x < 0:
-                    for basis in self.camera.horizontalBasisVectors:
+                    for basis in self.camera.basisVelocities:
                         if basis[0] < 0:
                             basis[0] = 0
                     self.landed = True
@@ -74,7 +74,7 @@ class Player:
         return sqrt(sqrt(cameraSpacePosition[0]**2 + cameraSpacePosition[1]**2)**2 + cameraSpacePosition[2]**2)
 
     def project(self, camera, screen):
-        globalSpaceVertices = np.array([vertex + np.array([*self.globalPosition[:3], 0.]) for vertex in rotate(self.vertices, self.camera.pitch, self.camera.yaw, 0)])
+        globalSpaceVertices = np.array([translate(vertex, *self.globalPosition[:3]) for vertex in rotate(self.vertices, self.camera.pitch, self.camera.yaw, 0)])
         cameraSpaceVertices = globalSpaceVertices @ camera.cameraTransformation
         clippingSpaceVertices = cameraSpaceVertices @ projectionMatrix
         normalizedVertices = np.array([vertex / vertex[3] if nearClippingPlane < vertex[3] < farClippingPlane else np.array([0, 0, 0, 1]) for vertex in clippingSpaceVertices])

@@ -3,10 +3,10 @@ import numpy as np
 
 def getTranslationMatrix(tX, tY, tZ):
     return np.array([
-        [1, 0, 0, tX],
-        [0, 1, 0, tY],
-        [0, 0, 1, tZ],
-        [0, 0, 0, 1]
+        [1, 0, 0, 0],
+        [0, 1, 0, 0],
+        [0, 0, 1, 0],
+        [tX, tY, tZ, 1]
     ])
 
 def getRotationMatrix(rX, rY, rZ):

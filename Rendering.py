@@ -63,7 +63,9 @@ class Engine3D:
         pygame.draw.line(self.screen, white, [WIDTH / 2, HEIGHT / 2 - 10], [WIDTH / 2, HEIGHT / 2 + 10])
 
     def placeBlock(self, target):
-        placement = target[0].placement + Block.normalsArranged[target[1]]
+        placement = target[0].placement[:3] + Block.normalsArranged[target[1]]
+        if placement[0] == floor(self.players[0].globalPosition[0]) and (placement[1] == floor(self.players[0].globalPosition[1]) or placement[1] == floor(self.players[0].globalPosition[1]) - 1) and placement[2] == floor(self.players[0].globalPosition[2]):
+            return
         for entity in self.entities:
             if placement[0] == entity.placement[0] and placement[1] == entity.placement[1] and placement[2] == entity.placement[2]:
                 return
@@ -71,11 +73,16 @@ class Engine3D:
         self.synchronization = placement
 
     def arrangeEntities(self):
-        entitiesArrangement = [[self.entities[0], self.entities[0].preprocess(self.players[0].camera)]]
-        for entity in self.entities[1:]:
+        entitiesArrangement = []
+        for entity in self.entities:
+            arrangementValue = entity.preprocess(self.players[0].camera)
+            if arrangementValue > 10:
+                continue
+            elif not entitiesArrangement:
+                entitiesArrangement.append([entity, arrangementValue])
+                continue
             entitiesArranged = []
             inserted = False
-            arrangementValue = entity.preprocess(self.players[0].camera)
             for arranged in entitiesArrangement:
                 if arrangementValue > arranged[1] and not inserted:
                     entitiesArranged.append([entity, arrangementValue])

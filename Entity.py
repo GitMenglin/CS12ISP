@@ -1,28 +1,32 @@
 import pygame
 from math import *
 import numpy as np
+from MathUtil import *
 from Constants import *
 
 class Block:
     target = None
-    normalsArranged = [np.array([0, 0, -1, 0]), np.array([0, 0, 1, 0]), 
-                       np.array([-1, 0, 0, 0]), np.array([1, 0, 0, 0]),
-                       np.array([0, 1, 0, 0]), np.array([0, -1, 0, 0])]
+    normalsArranged = [np.array([0, 0, -1]), np.array([0, 0, 1]), 
+                       np.array([-1, 0, 0]), np.array([1, 0, 0]),
+                       np.array([0, 1, 0]), np.array([0, -1, 0])]
     
-    def __init__(self, geometry, placement=[0, 0, 0, 0], color=green):
+    def __init__(self, geometry, placement=[0, 0, 0], color=green):
         self.vertices = geometry[0]
         self.faces = geometry[1]
         self.color = color
-        self.placement = np.array(placement)
-        self.shift(self.placement)
+        self.placement = np.array([*placement, 1])
+        self.shift()
         self.cameraSpaceVertices = None
         self.cameraRelativeCenter = None
         self.transformedFaces = None
         self.selected = False
 
     def preprocess(self, camera):
+        self.cameraRelativeCenter = translate(self.placement, 0.5, 0.5, 0.5)[:3] - camera.globalPosition[:3]
+        arrangementValue = sqrt(sqrt(self.cameraRelativeCenter[0]**2 + self.cameraRelativeCenter[1]**2)**2 + self.cameraRelativeCenter[2]**2)
+        if arrangementValue > 10:
+            return arrangementValue
         self.cameraSpaceVertices = self.vertices @ camera.cameraTransformation
-        self.cameraRelativeCenter = self.placement[:3] + np.array([0.5, 0.5, 0.5]) - camera.globalPosition[:3]
         clippingSpaceVertices = self.cameraSpaceVertices @ projectionMatrix
         normalizedVertices = np.array([vertex / vertex[3] if nearClippingPlane < vertex[3] < farClippingPlane else np.array([0, 0, 0, 1]) for vertex in clippingSpaceVertices])
         screenSpaceVertices = normalizedVertices @ screenTransformation
@@ -30,8 +34,7 @@ class Block:
         
         self.selected = False
         self.transformedFaces = []
-        faceCount = len(self.faces)
-        for i in range(faceCount):
+        for i in range(len(self.faces)):
             transformedPolygon = [self.cameraSpaceVertices[vertex] for vertex in self.faces[i]]
             a = transformedPolygon[0][:3] - transformedPolygon[1][:3]
             b = transformedPolygon[2][:3] - transformedPolygon[1][:3]
@@ -58,7 +61,7 @@ class Block:
             else:
                 self.transformedFaces.append(None)
         
-        return sqrt(sqrt(self.cameraRelativeCenter[0]**2 + self.cameraRelativeCenter[1]**2)**2 + self.cameraRelativeCenter[2]**2)
+        return arrangementValue
 
     def project(self, screen):
         for i in range(len(self.transformedFaces)):
@@ -71,5 +74,5 @@ class Block:
                     pygame.draw.polygon(screen, (0, 255, 255 - adjustment), [vertex[:2] for vertex in face[0]])
                 pygame.draw.polygon(screen, (0, 255 - adjustment, 255), [vertex[:2] for vertex in face[0]], 1)
 
-    def shift(self, placement):
-        self.vertices = np.array([vertex + placement for vertex in self.vertices])
+    def shift(self):
+        self.vertices = translate(self.vertices, *self.placement[:3])

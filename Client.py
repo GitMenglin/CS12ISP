@@ -33,7 +33,7 @@ def main():
     pygame.init()
     pygame.mouse.set_visible(paused)
     players = [Player()]
-    entities = [Block(Geometry.cube, [i, 0, j, 0]) for j in range(10) for i in range(10)]
+    entities = [Block(Geometry.cube, [x, 0, z]) for x in range(10) for z in range(10)]
     engine = Engine3D(players, entities)
     
     try:

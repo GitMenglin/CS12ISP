@@ -1,8 +1,23 @@
 import pygame
 from math import *
 import numpy as np
+from GeometryLib import Geometry
 from MathUtil import *
 from Constants import *
+
+# AI recommended Object Pooling for block creation management and reduced garbage collection pressure
+class BlockPool:
+    pool = []
+    
+    def acquire(geometry, placement):
+        if BlockPool.pool:
+            block = BlockPool.pool.pop()
+            block.__init__(geometry, placement)
+            return block
+        return Block(geometry, placement)
+    
+    def release(block):
+        BlockPool.pool.append(block)
 
 class Block:
     target = None
@@ -10,21 +25,25 @@ class Block:
                        np.array([-1, 0, 0]), np.array([1, 0, 0]),
                        np.array([0, 1, 0]), np.array([0, -1, 0])]
     
-    def __init__(self, geometry, placement=[0, 0, 0], color=green):
+    def __init__(self, geometry, placement=[0, 0, 0]):
         self.vertices = geometry[0]
         self.faces = geometry[1]
-        self.color = color
+        self.colors = geometry[2]
         self.placement = np.array([*placement, 1])
+        self.center = translate(self.placement, 0.5, 0.5, 0.5)
         self.shift()
+        self.eligible = False
         self.cameraSpaceVertices = None
-        self.cameraRelativeCenter = None
+        self.cameraSpaceCenter = None
         self.transformedFaces = None
         self.selected = False
 
     def preprocess(self, camera):
-        self.cameraRelativeCenter = translate(self.placement, 0.5, 0.5, 0.5)[:3] - camera.globalPosition[:3]
-        arrangementValue = sqrt(sqrt(self.cameraRelativeCenter[0]**2 + self.cameraRelativeCenter[1]**2)**2 + self.cameraRelativeCenter[2]**2)
-        if arrangementValue > 10:
+        self.cameraSpaceCenter = self.center @ camera.cameraTransformation
+        self.cameraSpaceCenter = self.cameraSpaceCenter[:3]
+        arrangementValue = np.linalg.norm(self.cameraSpaceCenter)
+        self.eligible = self.cameraSpaceCenter[2] >= -1.25 and arrangementValue <= renderingRadius
+        if not self.eligible:
             return arrangementValue
         self.cameraSpaceVertices = self.vertices @ camera.cameraTransformation
         clippingSpaceVertices = self.cameraSpaceVertices @ projectionMatrix
@@ -46,7 +65,7 @@ class Block:
                 vertexCount += 1
             faceCenter /= vertexCount
             culled = np.dot(normal, faceCenter) <= 0
-            distance = sqrt(sqrt(faceCenter[0]**2 + faceCenter[1]**2)**2 + faceCenter[2]**2)
+            distance = np.linalg.norm(faceCenter)
             
             if not culled:
                 if len(transformedPolygon) == 4:
@@ -57,7 +76,7 @@ class Block:
                             Block.target = [self, i, distance]
                 
                 transformedPolygon = [screenSpaceVertices[vertex] for vertex in self.faces[i] if screenSpaceVertices[vertex] is not None]
-                self.transformedFaces.append([transformedPolygon, distance])
+                self.transformedFaces.append(transformedPolygon)
             else:
                 self.transformedFaces.append(None)
         
@@ -66,13 +85,12 @@ class Block:
     def project(self, screen):
         for i in range(len(self.transformedFaces)):
             face = self.transformedFaces[i]
-            if face is not None and len(face[0]) > 2:
-                adjustment = 255 * (1 / 2)**(face[1] / 100)
+            if face is not None and len(face) > 2:
                 if self.selected and i == Block.target[1]:
-                    pygame.draw.polygon(screen, red, [vertex[:2] for vertex in face[0]])
+                    pygame.draw.polygon(screen, [min(1.25 * color, 255) for color in self.colors[i]], [vertex[:2] for vertex in face])
                 else:
-                    pygame.draw.polygon(screen, (0, 255, 255 - adjustment), [vertex[:2] for vertex in face[0]])
-                pygame.draw.polygon(screen, (0, 255 - adjustment, 255), [vertex[:2] for vertex in face[0]], 1)
+                    pygame.draw.polygon(screen, self.colors[i], [vertex[:2] for vertex in face])
+                pygame.draw.polygon(screen, [0.75 * color for color in self.colors[i]], [vertex[:2] for vertex in face], 1)
 
     def shift(self):
         self.vertices = translate(self.vertices, *self.placement[:3])

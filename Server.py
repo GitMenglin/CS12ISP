@@ -1,11 +1,12 @@
 import socket
 import pickle
+import zlib
 import threading
 
 def handleClient(connection, playerId):
     while True:
         try:
-            players.append(pickle.loads(connection.recv(1024)))
+            players.append(pickle.loads(connection.recv(1024 * 5)))
             print(f"{players[playerId][0]}(Player{playerId + 1}) connected!")
             break
         except:

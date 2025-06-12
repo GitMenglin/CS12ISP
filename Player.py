@@ -6,7 +6,7 @@ from GeometryLib import Geometry
 from Constants import *
 
 class Player:
-    def __init__(self, globalPosition=[1., 2.5, 1., 1.], pitch=0, yaw=-pi / 6, geometry=Geometry.camera):
+    def __init__(self, globalPosition=[worldSize // 2 + 0.5, 0., worldSize // 2 + 0.5, 1.], pitch=0, yaw=0, geometry=Geometry.camera):
         self.globalPosition = np.array(globalPosition)
         self.camera = Camera(self.globalPosition, pitch, yaw)
         self.vertices = geometry[0]
@@ -30,7 +30,7 @@ class Player:
             self.velocityY -= 0.01
 
     def checkCollisionHorizontal(self, block):
-        x, y, z = block.cameraRelativeCenter
+        x, y, z = block.center[:3] - self.camera.globalPosition[:3]
         
         if -1.75 <= y <= 0.75:
             if abs(x) <= 0.5:
@@ -57,7 +57,7 @@ class Player:
                     self.landed = True
 
     def checkCollisionVertical(self, block):
-        x, y, z = block.cameraRelativeCenter
+        x, y, z = block.center[:3] - self.camera.globalPosition[:3]
         
         landing = -2 <= y <= 0
         if not self.landed and landing:
@@ -71,7 +71,7 @@ class Player:
 
     def getArrangementValue(self, camera):
         cameraSpacePosition = self.globalPosition @ camera.cameraTransformation
-        return sqrt(sqrt(cameraSpacePosition[0]**2 + cameraSpacePosition[1]**2)**2 + cameraSpacePosition[2]**2)
+        return np.linalg.norm(cameraSpacePosition[:3])
 
     def project(self, camera, screen):
         globalSpaceVertices = np.array([translate(vertex, *self.globalPosition[:3]) for vertex in rotate(self.vertices, self.camera.pitch, self.camera.yaw, 0)])
@@ -95,7 +95,7 @@ class Player:
             dotProduct = np.dot(normal, center)
             if dotProduct > 0:
                 polygon = [screenSpaceVertices[vertex] for vertex in face if screenSpaceVertices[vertex] is not None]
-                distance = sqrt(sqrt(center[0]**2 + center[1]**2)**2 + center[2]**2)
+                distance = np.linalg.norm(center[:3])
                 if len(polygon) > 2:
                     adjustment = 255 * (1 / 2)**(distance / 100)
                     pygame.draw.polygon(screen, (adjustment, 255, 255 - adjustment), [vertex[:2] for vertex in polygon])

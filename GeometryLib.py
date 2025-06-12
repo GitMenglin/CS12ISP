@@ -1,4 +1,5 @@
 import numpy as np
+from Constants import *
 
 class Geometry:
     camera = [
@@ -16,7 +17,7 @@ class Geometry:
                 [1, 4, 3, 2]
             ]]
     
-    cube = [
+    grassBlock = [
         np.array([
             np.array([0, 0, 0, 1]),
             np.array([0, 1, 0, 1]),
@@ -33,4 +34,11 @@ class Geometry:
                 [2, 6, 7, 3],
                 [1, 5, 6, 2],
                 [0, 3, 7, 4]
+            ], [
+                dirt,
+                dirt,
+                dirt,
+                dirt,
+                grass,
+                dirt
             ]]

@@ -1,11 +1,13 @@
 import socket
 import pickle
+import zlib
 import subprocess
 import sys
 from GeometryLib import Geometry
 from Player import Player
 from Entity import *
 from Rendering import Engine3D
+from Constants import *
 try:
     import pygame
 except ImportError:
@@ -14,8 +16,10 @@ try:
     import numpy as np
 except ImportError:
     subprocess.call([sys.executable, "-m", "pip", "install", "numpy"])
-
-debug = False
+try:
+    import noise
+except ImportError:
+    subprocess.call([sys.executable, "-m", "pip", "install", "noise"])
 
 def main():
     ip = socket.gethostbyname(socket.gethostname())
@@ -33,8 +37,7 @@ def main():
     pygame.init()
     pygame.mouse.set_visible(paused)
     players = [Player()]
-    entities = [Block(Geometry.cube, [x, 0, z]) for x in range(10) for z in range(10)]
-    engine = Engine3D(players, entities)
+    engine = Engine3D(players)
     
     try:
         client.sendall(pickle.dumps([name, np.append(players[0].globalPosition[:3], 1), players[0].camera.pitch, players[0].camera.yaw, engine.synchronization]))
@@ -47,7 +50,7 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 done = True
-                
+
         try:
             playerCount = pickle.loads(client.recv(20))
             while playerCount > len(players):
@@ -65,7 +68,7 @@ def main():
                             engine.entities.pop(int(synchronization) - 1)
                             print("excavated")
                         except TypeError:
-                            engine.entities.append(Block(Geometry.cube, synchronization))
+                            engine.entities.append(BlockPool.acquire(Geometry.grassBlock, synchronization))
                             print("placed")
         except Exception as e:
             if debug:
@@ -75,7 +78,7 @@ def main():
             paused = not paused
             pygame.mouse.set_visible(paused)
             escCoolDownStart = pygame.time.get_ticks()
-        playerCoords = [round(coordinate.item(), 2) for coordinate in players[0].globalPosition[:3]]
+        playerCoords = [round(coordinate.item()) for coordinate in players[0].globalPosition[:3]]
         pygame.display.set_caption(f"{name}: {playerCoords}")
         engine.render(paused)
         

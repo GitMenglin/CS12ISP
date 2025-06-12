@@ -1,15 +1,28 @@
 from math import *
 import numpy as np
 
-WIDTH, HEIGHT = 600, 600
+WIDTH, HEIGHT = 800, 600
 
 black = (0, 0, 0)
 white = (255, 255, 255)
 red = (255, 0, 0)
 yellow = (255, 255, 0)
 green = (0, 255, 0)
+grass = (0, 124, 0)
+dirt = (151, 109, 77)
 cyan = (0, 255, 255)
 blue = (0, 0, 255)
+
+debug = False
+worldSize = 20 * 16
+renderingRadius = 7
+renderingRange = 2 * renderingRadius + 1
+
+cameraBasisVectors = np.array([
+    np.array([0., 0., 1., 1.]),
+    np.array([0., 1., 0., 1.]),
+    np.array([1., 0., 0., 1.])
+    ])
 
 horizontalFieldOfView = pi / 2
 verticalFieldOfView = horizontalFieldOfView * (HEIGHT / WIDTH)

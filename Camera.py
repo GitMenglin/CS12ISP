@@ -7,12 +7,8 @@ from Constants import *
 class Camera:
     def __init__(self, globalPosition, pitch, yaw):
         self.globalPosition = globalPosition
-        self.basisVectors = np.array([
-            np.array([0, 0, 1, 1]),
-            np.array([0, 1, 0, 1]),
-            np.array([1, 0, 0, 1])
-        ])
-        self.basisVelocities = self.basisVectors
+        self.basisVectors = cameraBasisVectors
+        self.basisVelocities = cameraBasisVectors
         self.pitch = pitch
         self.yaw = yaw
         self.cameraTransformation = self.getCameraTranslation() @ self.getCameraOrientation()
@@ -34,13 +30,8 @@ class Camera:
         self.wasPaused = paused
 
     def update(self):
-        self.basisVectors = np.array([
-            np.array([0, 0, 1, 1]),
-            np.array([0, 1, 0, 1]),
-            np.array([1, 0, 0, 1])
-        ])
-        self.basisVelocities = rotate(self.basisVectors, 0, self.yaw, 0)
-        self.basisVectors = rotate(self.basisVectors, self.pitch, self.yaw, 0)
+        self.basisVelocities = rotate(cameraBasisVectors, 0, self.yaw, 0)
+        self.basisVectors = rotate(cameraBasisVectors, self.pitch, self.yaw, 0)
         self.cameraTransformation = self.getCameraTranslation() @ self.getCameraOrientation()
         
         keyPressed = pygame.key.get_pressed()

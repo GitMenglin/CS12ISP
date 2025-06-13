@@ -79,7 +79,7 @@ def main():
             pygame.mouse.set_visible(paused)
             escCoolDownStart = pygame.time.get_ticks()
         playerCoords = [round(coordinate.item()) for coordinate in players[0].globalPosition[:3]]
-        pygame.display.set_caption(f"{name}: {playerCoords}")
+        pygame.display.set_caption(f"{name}: {playerCoords}\tFPS: {round(engine.clock.get_fps())}")
         engine.render(paused)
         
     client.close()

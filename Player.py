@@ -24,10 +24,20 @@ class Player:
         
         if not paused:
             if pygame.key.get_pressed()[pygame.K_SPACE] and self.landed and pygame.time.get_ticks() - self.jumpCoolDownStart > 600:
-                self.velocityY = 0.125
+                self.velocityY = 0.15
                 self.jumpCoolDownStart = pygame.time.get_ticks()
             self.camera.globalPosition += np.array([0, 1, 0, 1]) * self.velocityY
             self.velocityY -= 0.01
+
+    def checkCollisionVertical(self, block):
+        x, y, z = block.center[:3] - self.camera.globalPosition[:3]
+        
+        landing = -2 <= y <= 0 and abs(x) <= 0.5 and abs(z) <= 0.5
+        if not self.landed and landing:
+            self.velocityY = 0
+        if landing and abs(x) < 0.5 and abs(z) < 0.5:
+            self.camera.globalPosition[1] += y + 2
+        self.landed = landing
 
     def checkCollisionHorizontal(self, block):
         x, y, z = block.center[:3] - self.camera.globalPosition[:3]
@@ -38,36 +48,23 @@ class Player:
                     for basis in self.camera.basisVelocities:
                         if basis[2] > 0:
                             basis[2] = 0
-                    self.landed = True
+                    self.landed = self.velocityY == 0
                 elif -0.7 <= z < 0:
                     for basis in self.camera.basisVelocities:
                         if basis[2] < 0:
                             basis[2] = 0
-                    self.landed = True
+                    self.landed = self.velocityY == 0
             if abs(z) <= 0.5:
                 if 0 < x <= 0.7:
                     for basis in self.camera.basisVelocities:
                         if basis[0] > 0:
                             basis[0] = 0
-                    self.landed = True
+                    self.landed = self.velocityY == 0
                 elif -0.7 <= x < 0:
                     for basis in self.camera.basisVelocities:
                         if basis[0] < 0:
                             basis[0] = 0
-                    self.landed = True
-
-    def checkCollisionVertical(self, block):
-        x, y, z = block.center[:3] - self.camera.globalPosition[:3]
-        
-        landing = -2 <= y <= 0
-        if not self.landed and landing:
-            self.velocityY = 0
-        if self.landed and not landing:
-            self.velocityY = -0.01
-        self.landed = landing
-        
-        if self.landed and abs(x) < 0.5 and abs(z) < 0.5:
-            self.camera.globalPosition[1] += y + 2
+                    self.landed = self.velocityY == 0
 
     def getArrangementValue(self, camera):
         cameraSpacePosition = self.globalPosition @ camera.cameraTransformation

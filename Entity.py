@@ -42,12 +42,12 @@ class Block:
         self.cameraSpaceCenter = self.center @ camera.cameraTransformation
         self.cameraSpaceCenter = self.cameraSpaceCenter[:3]
         arrangementValue = np.linalg.norm(self.cameraSpaceCenter)
-        self.eligible = self.cameraSpaceCenter[2] >= -1.25 and arrangementValue <= renderingRadius
+        self.eligible = self.cameraSpaceCenter[2] >= -2.25 and arrangementValue <= renderingRadius
         if not self.eligible:
             return arrangementValue
         self.cameraSpaceVertices = self.vertices @ camera.cameraTransformation
         clippingSpaceVertices = self.cameraSpaceVertices @ projectionMatrix
-        normalizedVertices = np.array([vertex / vertex[3] if nearClippingPlane < vertex[3] < farClippingPlane else np.array([0, 0, 0, 1]) for vertex in clippingSpaceVertices])
+        normalizedVertices = np.array([vertex / vertex[3] if vertex[3] > nearClippingPlane else np.array([0, 0, 0, 1]) for vertex in clippingSpaceVertices])
         screenSpaceVertices = normalizedVertices @ screenTransformation
         screenSpaceVertices = [vertex if vertex[2] > 0 else None for vertex in screenSpaceVertices]
         
@@ -69,7 +69,7 @@ class Block:
             
             if not culled:
                 if len(transformedPolygon) == 4:
-                    if faceCenter[2] < 5 and np.dot(transformedPolygon[0][:2], transformedPolygon[2][:2]) + np.dot(transformedPolygon[1][:2], transformedPolygon[3][:2]) < -0.3:
+                    if 0 < faceCenter[2] < 5 and np.dot(transformedPolygon[0][:2], transformedPolygon[2][:2]) + np.dot(transformedPolygon[1][:2], transformedPolygon[3][:2]) < -0.25:
                         if Block.target is None:
                             Block.target = [self, i, distance]
                         elif distance < Block.target[2]:

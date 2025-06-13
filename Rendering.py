@@ -7,7 +7,7 @@ from Constants import *
 
 class Engine3D:
     def __init__(self, players):
-        self.screen = pygame.display.set_mode([WIDTH, HEIGHT], pygame.DOUBLEBUF | pygame.RESIZABLE)
+        self.screen = pygame.display.set_mode([WIDTH, HEIGHT], pygame.RESIZABLE)
         self.clock = pygame.time.Clock()
         self.players = players
         self.entities = None
@@ -18,12 +18,12 @@ class Engine3D:
 
     def render(self, paused):
         self.synchronization = None
-        self.screen.fill(cyan)
+        self.screen.fill(void)
         self.players[0].update(paused)
         self.project()
         
         pygame.display.update()
-        self.clock.tick(60)
+        self.clock.tick(40)
 
     def project(self):
         Block.target = None
@@ -56,11 +56,11 @@ class Engine3D:
                 playerRendered += 1
             entity[0].project(self.screen)
             cameraRelativeCenter = entity[0].center[:3] - self.players[0].camera.globalPosition[:3]
-            horizontalDistance = np.linalg.norm(np.array([cameraRelativeCenter[0], cameraRelativeCenter[2]]))
-            if horizontalDistance <= 1.25:
-                self.players[0].checkCollisionHorizontal(entity[0])
+            horizontalDistance = np.linalg.norm(cameraRelativeCenter[::2])
             if horizontalDistance <= 0.75:
                 self.players[0].checkCollisionVertical(entity[0])
+            if horizontalDistance <= 1.25:
+                self.players[0].checkCollisionHorizontal(entity[0])
         while playerRendered < playerCount:
             playersArrangement[playerRendered][0].project(self.players[0].camera, self.screen)
             playerRendered += 1
@@ -88,6 +88,10 @@ class Engine3D:
                 for k in range(max(z, 0), min(len(self.entities[0][0]), int(z + renderingRange))):
                     entity = self.entities[i][j][k]
                     if entity is not None:
+                        if (self.entities[i + 1][j][k] is not None and self.entities[i - 1][j][k] is not None and
+                            self.entities[i][j + 1][k] is not None and self.entities[i][j - 1][k] is not None and
+                            self.entities[i][j][k + 1] is not None and self.entities[i][j][k - 1] is not None):
+                            continue
                         arrangementValue = entity.preprocess(self.players[0].camera)
                         if not entity.eligible:
                             continue
@@ -130,16 +134,15 @@ class Engine3D:
             return [[], 0]
 
     def generateTerrain(self):
-        scale = random.randint(int(0.8 * worldSize), int(1.2 * worldSize))
-        stretch = random.randint(10, worldSize)
-        width, height, depth = worldSize, 2 * worldSize, worldSize
+        stretch = random.randint(10, worldSize // 10)
+        scale = random.randint(int(0.75 * stretch), int(1.25 * stretch))
+        width, height, depth = worldSize, worldSize // 5, worldSize
         self.entities = [[[None for _ in range(depth)] for _ in range(height)] for _ in range(width)]
         
         for x in range(width):
             for z in range(depth):
-                y = int(stretch * noise.pnoise2(x / scale, z / scale, octaves=4) + worldSize)
-                self.entities[x][y][z] = BlockPool.acquire(Geometry.grassBlock, [x, y, z])
-                # for i in range(y + 1):
-                #     self.entities[x][i][z] = BlockPool.acquire(Geometry.grassBlock, [x, i, z])
+                y = int(stretch * noise.pnoise2(x / scale, z / scale, octaves=4) + worldSize // 10)
+                for i in range(y + 1):
+                    self.entities[x][i][z] = BlockPool.acquire(Geometry.grassBlock, [x, i, z])
                 if x == worldSize // 2 and z == worldSize // 2:
                     self.players[0].camera.globalPosition[1] = y + 3

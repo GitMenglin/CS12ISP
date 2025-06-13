@@ -5,13 +5,9 @@ WIDTH, HEIGHT = 800, 600
 
 black = (0, 0, 0)
 white = (255, 255, 255)
-red = (255, 0, 0)
-yellow = (255, 255, 0)
-green = (0, 255, 0)
 grass = (0, 124, 0)
 dirt = (151, 109, 77)
-cyan = (0, 255, 255)
-blue = (0, 0, 255)
+void = (0, 191, 191)
 
 debug = False
 worldSize = 20 * 16
@@ -26,7 +22,7 @@ cameraBasisVectors = np.array([
 
 horizontalFieldOfView = pi / 2
 verticalFieldOfView = horizontalFieldOfView * (HEIGHT / WIDTH)
-nearClippingPlane = 0.1
+nearClippingPlane = 0.01
 farClippingPlane = 100
 right = tan(horizontalFieldOfView / 2)
 top = tan(verticalFieldOfView / 2)
@@ -35,7 +31,7 @@ projectionMatrix = np.array([
     [1 / right, 0, 0, 0],
     [0, 1 / top, 0, 0],
     [0, 0, (farClippingPlane + nearClippingPlane) / (farClippingPlane - nearClippingPlane), 1],
-    [0, 0, -2 * farClippingPlane * nearClippingPlane / (farClippingPlane - nearClippingPlane), 0]
+    [0, 0, 0, 0]
     ])
 
 screenTransformation = np.array([

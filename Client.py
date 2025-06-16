@@ -21,6 +21,25 @@ try:
 except ImportError:
     subprocess.call([sys.executable, "-m", "pip", "install", "noise"])
 
+def send(client, data):
+    compressed = zlib.compress(pickle.dumps(data))
+    client.sendall(len(compressed).to_bytes(4))
+    client.sendall(compressed)
+
+def receive(client):
+    size = client.recv(4)
+    if not size:
+        return None
+    size = int.from_bytes(size)
+    
+    compressed = b""
+    while len(compressed) < size:
+        data = client.recv(size - len(compressed))
+        if not data:
+            return None
+        compressed += data
+    return pickle.loads(zlib.decompress(compressed))
+
 def main():
     ip = socket.gethostbyname(socket.gethostname())
     port = 1234
@@ -40,10 +59,20 @@ def main():
     engine = Engine3D(players)
     
     try:
-        client.sendall(pickle.dumps([name, np.append(players[0].globalPosition[:3], 1), players[0].camera.pitch, players[0].camera.yaw, engine.synchronization]))
-        client.settimeout(0.05)
-    except:
-        pass
+        playerCount = receive(client)
+        if isinstance(playerCount, int):
+            while playerCount > len(players):
+                players.append(Player())
+        send(client, [name, np.append(players[0].globalPosition[:3], 1), players[0].camera.pitch, players[0].camera.yaw, players[0].swing, players[0].geometry, engine.synchronization])
+        if playerCount == 0:
+            send(client, engine.generateTerrain())
+        else:
+            engine.loadTerrain(receive(client))
+        client.settimeout(0.01)
+    except Exception as e:
+        if debug:
+            print(f"{type(e)}: {e}")
+        engine.generateTerrain()
     
     done = False
     while not done:
@@ -52,24 +81,25 @@ def main():
                 done = True
 
         try:
-            playerCount = pickle.loads(client.recv(20))
-            while playerCount > len(players):
-                players.append(Player())
-            client.sendall(pickle.dumps([name, np.append(players[0].globalPosition[:3], 1), players[0].camera.pitch, players[0].camera.yaw, engine.synchronization]))
-            for i in range(playerCount - 1):
-                raw = pickle.loads(client.recv(1024 * 5))
-                if isinstance(raw, list):
-                    players[i + 1].name, players[i + 1].globalPosition, players[i + 1].camera.pitch, players[i + 1].camera.yaw, synchronization = raw
-                    if synchronization is not None:
-                        try:
-                            engine.entities.pop(int(synchronization))
-                            print("excavated")
-                        except IndexError:
-                            engine.entities.pop(int(synchronization) - 1)
-                            print("excavated")
-                        except TypeError:
-                            engine.entities.append(BlockPool.acquire(Geometry.grassBlock, synchronization))
-                            print("placed")
+            playerCount = receive(client)
+            if isinstance(playerCount, int):
+                while playerCount > len(players):
+                    players.append(Player())
+                send(client, [name, np.append(players[0].globalPosition[:3], 1), players[0].camera.pitch, players[0].camera.yaw, players[0].swing, players[0].geometry, engine.synchronization])
+                for i in range(playerCount - 1):
+                    data = receive(client)
+                    if isinstance(data, list) and len(data) == 7:
+                        players[i + 1].name, players[i + 1].globalPosition, players[i + 1].camera.pitch, players[i + 1].camera.yaw, players[i + 1].swing, players[i + 1].geometry, synchronization = data
+                        if isinstance(synchronization, list):
+                            x, y, z = synchronization[1]
+                            blockType = synchronization[0]
+                            if blockType:
+                                engine.entities[x][y][z] = BlockPool.acquire(Geometry.blocks[blockType], synchronization[1])
+                            else:
+                                BlockPool.release(engine.entities[x][y][z])
+                                engine.entities[x][y][z] = None
+                    else:
+                        break
         except Exception as e:
             if debug:
                 print(f"{type(e)}: {e}")

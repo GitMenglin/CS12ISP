@@ -1,16 +1,27 @@
 from math import *
 import numpy as np
 
-WIDTH, HEIGHT = 800, 600
+WIDTH, HEIGHT = 600, 600
 
 black = (0, 0, 0)
 white = (255, 255, 255)
-grass = (0, 124, 0)
+grass = (127, 178, 56)
 dirt = (151, 109, 77)
+stone = (112, 112, 112)
+logStriped = (247, 233, 163)
+logBark = (102, 76, 51)
+leaves = (0, 124, 0)
 void = (0, 191, 191)
 
+steveSkin = (169, 125, 100)
+steveShirt = (0, 175, 175)
+stevePant = (73, 70, 151)
+steveEye = (73, 70, 151)
+steveHair = (49, 48, 43)
+steveShoe = (107, 107, 107)
+
 debug = False
-worldSize = 20 * 16
+worldSize = 16 * 16
 renderingRadius = 7
 renderingRange = 2 * renderingRadius + 1
 

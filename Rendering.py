@@ -14,38 +14,38 @@ class Engine3D:
         self.excavateStart = 0
         self.coolDownStart = 0
         self.synchronization = None
-        self.generateTerrain()
 
     def render(self, paused):
         self.synchronization = None
         self.screen.fill(void)
         self.players[0].update(paused)
-        self.project()
+        self.project(paused)
         
         pygame.display.update()
         self.clock.tick(40)
 
-    def project(self):
+    def project(self, paused):
         Block.target = None
         entitiesArrangement = self.arrangeEntities()
         playersArrangement, playerCount = self.arrangePlayers()
         
-        if not pygame.mouse.get_pressed()[0]:
-            self.excavateStart = pygame.time.get_ticks()
-        if Block.target is not None:
-            Block.target[0].selected = True
-            if pygame.mouse.get_pressed()[0] and pygame.time.get_ticks() - self.excavateStart > 1000:
-                self.synchronization = Block.target[0].placement[:3]
-                x, y, z = self.synchronization
-                self.entities[x][y][z] = None
-                BlockPool.release(Block.target[0])
+        if not paused:
+            if not pygame.mouse.get_pressed()[0]:
                 self.excavateStart = pygame.time.get_ticks()
-            if pygame.mouse.get_pressed()[2]:
-                if pygame.time.get_ticks() - self.coolDownStart > 200:
-                    self.placeBlock(Block.target)
-                self.coolDownStart = pygame.time.get_ticks()
-        else:
-            self.excavateStart = pygame.time.get_ticks()
+            if Block.target:
+                Block.target[0].selected = True
+                if pygame.mouse.get_pressed()[0] and pygame.time.get_ticks() - self.excavateStart > 1000:
+                    self.synchronization = [None, Block.target[0].placement[:3]]
+                    x, y, z = self.synchronization[1]
+                    BlockPool.release(self.entities[x][y][z])
+                    self.entities[x][y][z] = None
+                    self.excavateStart = pygame.time.get_ticks()
+                if pygame.mouse.get_pressed()[2]:
+                    if pygame.time.get_ticks() - self.coolDownStart > 200:
+                        self.placeBlock(Block.target)
+                    self.coolDownStart = pygame.time.get_ticks()
+            else:
+                self.excavateStart = pygame.time.get_ticks()
         
         playerRendered = 0
         self.players[0].landed = False
@@ -70,14 +70,13 @@ class Engine3D:
 
     def placeBlock(self, target):
         placement = target[0].placement[:3] + Block.normalsArranged[target[1]]
-        playerGlobalPosition = self.players[0].globalPosition[:3]
-        if all([placement[i] == floor(playerGlobalPosition[i]) if i != 1 else placement[i] == floor(playerGlobalPosition[i]) or placement[i] == floor(playerGlobalPosition[i]) - 1 for i in range(3)]):
+        if any([all([placement[i] == floor(player.globalPosition[i]) if i != 1 else placement[i] == floor(player.globalPosition[i]) or placement[i] == floor(player.globalPosition[i]) - 1 for i in range(3)]) for player in self.players]):
             return
         
         x, y, z = placement
         if 0 <= x < len(self.entities) and 0 <= y < len(self.entities[0]) and 0 <= z < len(self.entities[0][0]) and self.entities[x][y][z] is None:
-            self.entities[x][y][z] = BlockPool.acquire(Geometry.grassBlock, placement)
-            self.synchronization = placement
+            self.entities[x][y][z] = BlockPool.acquire(self.players[0].hotBarSelection[1], placement)
+            self.synchronization = [self.players[0].hotBarSelection[0], placement]
 
     def arrangeEntities(self):
         entitiesArrangement = []
@@ -138,11 +137,34 @@ class Engine3D:
         scale = random.randint(int(0.75 * stretch), int(1.25 * stretch))
         width, height, depth = worldSize, worldSize // 5, worldSize
         self.entities = [[[None for _ in range(depth)] for _ in range(height)] for _ in range(width)]
+        loadingPacket = [[[None for _ in range(depth)] for _ in range(height)] for _ in range(width)]
         
         for x in range(width):
             for z in range(depth):
                 y = int(stretch * noise.pnoise2(x / scale, z / scale, octaves=4) + worldSize // 10)
-                for i in range(y + 1):
-                    self.entities[x][i][z] = BlockPool.acquire(Geometry.grassBlock, [x, i, z])
+                for i in range(y, -1, -1):
+                    if y - i >= 4 or i <= worldSize // 20:
+                        self.entities[x][i][z] = BlockPool.acquire(Geometry.stone, [x, i, z])
+                        loadingPacket[x][i][z] = "stone"
+                    elif i == y:
+                        self.entities[x][i][z] = BlockPool.acquire(Geometry.grassBlock, [x, i, z])
+                        loadingPacket[x][i][z] = "grassBlock"
+                    else:
+                        self.entities[x][i][z] = BlockPool.acquire(Geometry.dirt, [x, i, z])
+                        loadingPacket[x][i][z] = "dirt"
                 if x == worldSize // 2 and z == worldSize // 2:
                     self.players[0].camera.globalPosition[1] = y + 3
+        
+        return [loadingPacket, [width, height, depth, self.players[0].camera.globalPosition[1]]]
+
+    def loadTerrain(self, loadingPacket):
+        width, height, depth, spawnHeight = loadingPacket[1]
+        self.entities = [[[None for _ in range(depth)] for _ in range(height)] for _ in range(width)]
+        self.players[0].camera.globalPosition[1] = spawnHeight
+        
+        for x in range(width):
+            for y in range(height):
+                for z in range(depth):
+                    blockType = loadingPacket[0][x][y][z]
+                    if blockType:
+                        self.entities[x][y][z] = BlockPool.acquire(Geometry.blocks[blockType], [x, y, z])

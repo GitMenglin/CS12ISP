@@ -56,8 +56,6 @@ def gameLoop(engine, client, multiplayer, name):
                 if isinstance(playerCount, int):
                     while playerCount > len(engine.players):
                         engine.players.append(Player())
-                    while playerCount < len(engine.players):
-                        engine.players.pop()
                     send(client, engine.done)
                     send(client, [name, np.array([*engine.players[0].globalPosition[:3], 1.]), engine.players[0].camera.pitch, engine.players[0].camera.yaw, engine.players[0].swing, engine.players[0].currentSkin, engine.synchronization])
                     for i in range(playerCount - 1):
@@ -71,8 +69,8 @@ def gameLoop(engine, client, multiplayer, name):
                                     engine.entities[x][y][z] = blockType
                                 else:
                                     engine.entities[x][y][z] = None
-                        else:
-                            break
+                        elif not data:
+                            engine.players[i + 1] = None
             except Exception as e:
                 if debug:
                     print(f"{type(e)}: {e}")

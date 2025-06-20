@@ -60,9 +60,7 @@ class Server:
                 self.send(connection, playerCount)
                 done = self.receive(connection)
                 if isinstance(done, bool) and done:
-                    print(f"{self.players[playerId][0]}(Player{playerId + 1}) disconnected!")
-                    self.players.pop(playerId)
-                    self.playerId = playerCount - 1
+                    self.players[playerId] = None
                     break
                 self.players[playerId] = self.receive(connection)
                 if isinstance(self.players[playerId], list) and len(self.players[playerId]) == 7:
@@ -78,5 +76,6 @@ class Server:
                 if self.debug:
                     print(f"{type(e)}: {e}")
         connection.close()
+        print(f"{self.players[playerId][0]}(Player{playerId + 1}) disconnected!")
 
 Server().run()

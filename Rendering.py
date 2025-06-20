@@ -95,7 +95,7 @@ class Engine3D:
 
     def placeBlock(self, target):
         placement = target[0].placement[:3] + Block.normalsArranged[target[1]]
-        if any([all([placement[i] == floor(player.globalPosition[i]) if i != 1 else placement[i] == floor(player.globalPosition[i]) or placement[i] == floor(player.globalPosition[i]) - 1 for i in range(3)]) for player in self.players]):
+        if any([all([placement[i] == floor(player.globalPosition[i]) if i != 1 else placement[i] == floor(player.globalPosition[i]) or placement[i] == floor(player.globalPosition[i]) - 1 for i in range(3)]) for player in self.players if player]):
             return
         
         x, y, z = placement
@@ -168,21 +168,27 @@ class Engine3D:
 
     def arrangePlayers(self):
         if len(self.players) > 1:
-            playersArrangement = [[self.players[1], self.players[1].getArrangementValue(self.players[0].camera)]]
-            playerCount = 1
-            for player in self.players[2:]:
-                playersArranged = []
-                inserted = False
-                arrangementValue = player.getArrangementValue(self.players[0].camera)
-                for arranged in playersArrangement:
-                    if arrangementValue > arranged[1] and not inserted:
+            playersArrangement = []
+            playerCount = 0
+            for player in self.players[1:]:
+                if not playersArrangement:
+                    if player:
+                        playersArrangement.append([player, player.getArrangementValue(self.players[0].camera)])
+                        playerCount += 1
+                    continue
+                if player:
+                    playersArranged = []
+                    inserted = False
+                    arrangementValue = player.getArrangementValue(self.players[0].camera)
+                    for arranged in playersArrangement:
+                        if arrangementValue > arranged[1] and not inserted:
+                            playersArranged.append([player, arrangementValue])
+                            inserted = True
+                        playersArranged.append(arranged)
+                    if not inserted: 
                         playersArranged.append([player, arrangementValue])
-                        inserted = True
-                    playersArranged.append(arranged)
-                if not inserted: 
-                    playersArranged.append([player, arrangementValue])
-                playersArrangement = playersArranged
-                playerCount += 1
+                    playersArrangement = playersArranged
+                    playerCount += 1
             return [playersArrangement, playerCount]
         else:
             return [[], 0]

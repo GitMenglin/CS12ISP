@@ -9,26 +9,32 @@ def getTranslationMatrix(tX, tY, tZ):
         [tX, tY, tZ, 1]
     ])
 
-def getRotationMatrix(rX, rY, rZ):
-    mX = np.array([
+def getRotationX(rX):
+    return np.array([
         [1, 0, 0, 0],
         [0, cos(rX), -sin(rX), 0],
         [0, sin(rX), cos(rX), 0],
         [0, 0, 0, 1]
-    ])
-    mY = np.array([
+        ])
+
+def getRotationY(rY):
+    return np.array([
         [cos(rY), 0, sin(rY), 0],
         [0, 1, 0, 0],
         [-sin(rY), 0, cos(rY), 0],
         [0, 0, 0, 1]
-    ])
-    mZ = np.array([
+        ])
+
+def getRotationZ(rZ):
+    return np.array([
         [cos(rZ), -sin(rZ), 0, 0],
         [sin(rZ), cos(rZ), 0, 0],
         [0, 0, 1, 0],
         [0, 0, 0, 1]
-    ])
-    return mX @ mY @ mZ
+        ])
+
+def getRotationMatrix(rX, rY, rZ):
+    return getRotationX(rX) @ getRotationY(rY) @ getRotationZ(rZ)
 
 def getScalingMatrix(sX, sY, sZ):
     return np.array([
@@ -44,6 +50,18 @@ def translate(vertices, tX, tY, tZ):
 
 def rotate(vertices, rX, rY, rZ):
     transformation = getRotationMatrix(rX, rY, rZ)
+    return vertices @ transformation
+
+def rotateX(vertices, rX):
+    transformation = getRotationX(rX)
+    return vertices @ transformation
+
+def rotateY(vertices, rY):
+    transformation = getRotationY(rY)
+    return vertices @ transformation
+
+def rotateZ(vertices, rZ):
+    transformation = getRotationZ(rZ)
     return vertices @ transformation
 
 def scale(vertices, sX, sY, sZ):

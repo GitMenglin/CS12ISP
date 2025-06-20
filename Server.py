@@ -2,6 +2,7 @@ import socket
 import pickle
 import zlib
 import threading
+import time
 
 class Server:
     def __init__(self):
@@ -50,13 +51,19 @@ class Server:
             self.loadingPacket = self.receive(connection)
         else:
             while not self.loadingPacket:
-                pass
+                time.sleep(0.01)
             self.send(connection, self.loadingPacket)
-        connection.settimeout(1.0)
+        connection.settimeout(1)
         while True:
             try:
                 playerCount = len(self.players)
                 self.send(connection, playerCount)
+                done = self.receive(connection)
+                if isinstance(done, bool) and done:
+                    print(f"{self.players[playerId][0]}(Player{playerId + 1}) disconnected!")
+                    self.players.pop(playerId)
+                    self.playerId = playerCount - 1
+                    break
                 self.players[playerId] = self.receive(connection)
                 if isinstance(self.players[playerId], list) and len(self.players[playerId]) == 7:
                     if isinstance(self.players[playerId][-1], list):
@@ -70,7 +77,6 @@ class Server:
             except Exception as e:
                 if self.debug:
                     print(f"{type(e)}: {e}")
-        print(f"{self.players[playerId][0]}(Player{playerId + 1}) disconnected!")
         connection.close()
 
 Server().run()

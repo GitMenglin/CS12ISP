@@ -8,7 +8,7 @@ class Camera:
     def __init__(self, globalPosition, pitch, yaw):
         self.globalPosition = globalPosition
         self.basisVectors = cameraBasisVectors
-        self.basisVelocities = cameraBasisVectors
+        self.basisVelocities = cameraBasisVelocities
         self.pitch = pitch
         self.yaw = yaw
         self.cameraTransformation = self.getCameraTranslation() @ self.getCameraOrientation()
@@ -19,7 +19,7 @@ class Camera:
     def control(self, paused):
         if not paused:
             self.globalPosition += self.basisVelocities[0] * self.translationalSpeed
-            self.globalPosition += self.basisVelocities[2] * self.translationalSpeed
+            self.globalPosition += self.basisVelocities[1] * self.translationalSpeed
 
             x, y = pygame.mouse.get_rel()
             if self.wasPaused:
@@ -29,20 +29,22 @@ class Camera:
             self.yaw -= x * self.angularSpeed
         self.wasPaused = paused
 
-    def update(self):
-        self.basisVelocities = rotate(cameraBasisVectors, 0, self.yaw, 0)
-        self.basisVectors = rotate(cameraBasisVectors, self.pitch, self.yaw, 0)
+    def update(self, keyPressed):
+        rotationX = getRotationX(self.pitch)
+        rotationY = getRotationY(self.yaw)
+        rotation = rotationX @ rotationY
+        self.basisVelocities = cameraBasisVelocities @ rotationY
+        self.basisVectors = cameraBasisVectors @ rotation
         self.cameraTransformation = self.getCameraTranslation() @ self.getCameraOrientation()
         
-        keyPressed = pygame.key.get_pressed()
         if keyPressed[pygame.K_s]:
             self.basisVelocities[0] *= -1
         elif not keyPressed[pygame.K_w]:
             self.basisVelocities[0] *= 0
         if keyPressed[pygame.K_a]:
-            self.basisVelocities[2] *= -1
+            self.basisVelocities[1] *= -1
         elif not keyPressed[pygame.K_d]:
-            self.basisVelocities[2] *= 0
+            self.basisVelocities[1] *= 0
 
     def getCameraTranslation(self):
         x, y, z, _ = self.globalPosition

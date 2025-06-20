@@ -9,12 +9,12 @@ from Constants import *
 class BlockPool:
     pool = []
     
-    def acquire(geometry, placement):
+    def acquire(blockType, placement):
         if BlockPool.pool:
             block = BlockPool.pool.pop()
-            block.__init__(geometry, placement)
+            block.__init__(Geometry.blocks[blockType], placement)
             return block
-        return Block(geometry, placement)
+        return Block(Geometry.blocks[blockType], placement)
     
     def release(block):
         BlockPool.pool.append(block)
@@ -28,30 +28,23 @@ class Block:
     def __init__(self, geometry, placement=[0, 0, 0]):
         self.vertices = geometry[0]
         self.faces = geometry[1]
+        self.faceCount = len(self.faces)
         self.colors = geometry[2]
         self.placement = np.array([*placement, 1])
         self.center = translate(self.placement, 0.5, 0.5, 0.5)
         self.transformedFaces = None
         self.shift()
-        self.eligible = False
         self.selected = False
 
     def preprocess(self, camera):
-        cameraSpaceCenter = self.center @ camera.cameraTransformation
-        cameraSpaceCenter = cameraSpaceCenter[:3]
-        arrangementValue = np.linalg.norm(cameraSpaceCenter)
-        self.eligible = cameraSpaceCenter[2] >= -2.25 and arrangementValue <= renderingRadius
-        if not self.eligible:
-            return arrangementValue
         cameraSpaceVertices = self.vertices @ camera.cameraTransformation
-        clippingSpaceVertices = cameraSpaceVertices @ projectionMatrix
-        normalizedVertices = np.array([vertex / vertex[3] if vertex[3] > 0 else np.array([-1, -1, -1, 1]) for vertex in clippingSpaceVertices])
-        screenSpaceVertices = normalizedVertices @ screenTransformation
+        normalizedVertices = np.array([np.array([*(vertex[:3] / vertex[2]), 1.]) if vertex[2] > 0 else np.array([-1, -1, -1, 1]) for vertex in cameraSpaceVertices])
+        screenSpaceVertices = normalizedVertices @ cameraToClippingToScreenTransformation
         screenSpaceVertices = [vertex if vertex[2] > 0 else None for vertex in screenSpaceVertices]
         
         self.selected = False
         self.transformedFaces = []
-        for i in range(len(self.faces)):
+        for i in range(self.faceCount):
             transformedPolygon = [cameraSpaceVertices[vertex] for vertex in self.faces[i]]
             a = transformedPolygon[0][:3] - transformedPolygon[1][:3]
             b = transformedPolygon[2][:3] - transformedPolygon[1][:3]
@@ -63,11 +56,11 @@ class Block:
                 vertexCount += 1
             faceCenter /= vertexCount
             culled = np.dot(normal, faceCenter) <= 0
-            distance = np.linalg.norm(faceCenter)
+            distance = sqrt(faceCenter[0]**2 + faceCenter[1]**2 + faceCenter[2]**2)
             
             if not culled:
-                if len(transformedPolygon) == 4:
-                    if 0 < faceCenter[2] < 5 and np.dot(transformedPolygon[0][:2], transformedPolygon[2][:2]) + np.dot(transformedPolygon[1][:2], transformedPolygon[3][:2]) < -0.25:
+                if i < 6 and vertexCount >= 3:
+                    if 0 < faceCenter[2] < 5 and np.dot(transformedPolygon[0][:2], transformedPolygon[vertexCount // 2][:2]) + np.dot(transformedPolygon[vertexCount // 4][:2], transformedPolygon[3 * vertexCount // 4][:2]) < -0.25:
                         if not Block.target:
                             Block.target = [self, i, distance]
                         elif distance < Block.target[2]:
@@ -77,11 +70,9 @@ class Block:
                 self.transformedFaces.append(transformedPolygon)
             else:
                 self.transformedFaces.append(None)
-        
-        return arrangementValue
 
     def project(self, screen):
-        for i in range(len(self.transformedFaces)):
+        for i in range(self.faceCount):
             polygon = self.transformedFaces[i]
             if polygon and len(polygon) > 2:
                 if self.selected and i == Block.target[1]:

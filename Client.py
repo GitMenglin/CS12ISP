@@ -171,7 +171,7 @@ def menu(engine):
                     send(client, engine.generateTerrain())
                 else:
                     engine.loadTerrain(receive(client))
-                client.settimeout(0.05)
+                client.settimeout(0.1)
             except Exception as e:
                 if debug:
                     print(f"{type(e)}: {e}")

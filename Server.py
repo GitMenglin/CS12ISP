@@ -53,7 +53,7 @@ class Server:
             while not self.loadingPacket:
                 time.sleep(0.01)
             self.send(connection, self.loadingPacket)
-        connection.settimeout(1)
+        connection.settimeout(1.0)
         while True:
             try:
                 playerCount = len(self.players)
